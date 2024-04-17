@@ -13,6 +13,12 @@ public record RestBean<T>(int code, T data , String message) {
     public static <T> RestBean<T> failure(int code,String msg){
         return new RestBean<>(code,null,msg);
     }
+    public static <T> RestBean<T> unauthorized(String mes){
+        return new RestBean<>(401,null,mes);
+    }
+    public static <T> RestBean<T> forbidden(String mes){
+        return new RestBean<>(403,null,mes);
+    }
     public String asJsonString(){
         return JSONObject.toJSONString(this, JSONWriter.Feature.WriteNulls);
     }
