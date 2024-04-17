@@ -3,6 +3,7 @@ package edu.hubu.config;
 import edu.hubu.entity.RestBean;
 import edu.hubu.entity.vo.response.AuthorizeVO;
 import edu.hubu.filter.JwtAuthorizeFilter;
+import edu.hubu.service.Imp.MyUserDetail;
 import edu.hubu.utils.JwtUtils;
 import jakarta.annotation.Resource;
 import jakarta.servlet.ServletException;
@@ -25,6 +26,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.http.HttpClient;
 
 @Configuration
@@ -71,13 +73,16 @@ public class SecurityConfiguration {
                                         HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException{
         response.setContentType("application/json;charset=utf-8");
-        User user = (User) authentication.getPrincipal();
-        String token = jwtUtils.creatJwt(user,1,"小明");
+//        User user = (User) authentication.getPrincipal();
+//        String token = jwtUtils.creatJwt(user,1,"小明");
+        // 修改后写法
+        MyUserDetail user = (MyUserDetail) authentication.getPrincipal();
+        String token = jwtUtils.creatJwt(user);
         AuthorizeVO vo = new AuthorizeVO();
         vo.setExpire(jwtUtils.expireTime());
-        vo.setRole("user");
+        vo.setRole(user.getRole());
         vo.setToken(token);
-        vo.setUsername("小明");
+        vo.setUsername(user.getUsername());
         response.getWriter().write(RestBean.success(vo).asJsonString());
     }
     public void onAuthenticationFailure(HttpServletRequest request,
@@ -87,7 +92,12 @@ public class SecurityConfiguration {
         response.getWriter().write(RestBean.failure(401,"用户名或密码错误").asJsonString());
     }
     public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
-
+        response.setContentType("application/json;charset=utf-8");
+        PrintWriter writer = response.getWriter();
+        String authorization = request.getHeader("Authorization");
+        if(jwtUtils.invalidateJwt(authorization))
+            writer.write(RestBean.success("注销成功").asJsonString());
+        else writer.write(RestBean.failure(400,"身份验证失效").asJsonString());
     }
     public void Unauthorized(HttpServletRequest request, HttpServletResponse response, AuthenticationException exception) throws IOException{
         response.setContentType("application/json;charset=utf-8");
