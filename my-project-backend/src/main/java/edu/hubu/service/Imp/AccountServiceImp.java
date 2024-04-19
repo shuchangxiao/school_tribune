@@ -1,7 +1,9 @@
 package edu.hubu.service.Imp;
 
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import edu.hubu.entity.dto.AccountDto;
+import edu.hubu.entity.vo.request.EmailRegisterVO;
 import edu.hubu.mapper.AccountMapper;
 import edu.hubu.service.AccountService;
 import edu.hubu.utils.Const;
@@ -15,8 +17,11 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.sql.Wrapper;
+import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
@@ -32,6 +37,32 @@ public class AccountServiceImp extends ServiceImpl<AccountMapper, AccountDto> im
     RedisTemplate redisTemplate;
     @Resource
     FlowUtils flowUtils;
+    @Resource
+    BCryptPasswordEncoder encoder;
+    @Override
+    public String registerEmailAccount(EmailRegisterVO vo) {
+        String email = vo.getEmail();
+        String code = (String) redisTemplate.opsForValue().get(Const.VERIFY_EMAIL_DATA+email);
+        if (code == null) return "请先获取验证码";
+        if(!code.equals(vo.getCode())) return "验证码输入错误，请重新输入";
+        if(this.existsAccountByEmail(email)) return "此电子邮箱已经被注册";
+        if(this.existsAccountByUsername(vo.getUsername())) return "此用户名已经被注册";
+        String password = encoder.encode(vo.getPassword());
+        AccountDto accountDto = new AccountDto(null,vo.getUsername(),password, vo.getEmail(), "user",new Date());
+        if(this.save(accountDto)) {
+            redisTemplate.delete(Const.VERIFY_EMAIL_DATA+email);
+            return null;
+        }
+        else return "内部出现错误，请联系管理员";
+
+    }
+
+    private boolean existsAccountByEmail(String email){
+        return this.baseMapper.exists(Wrappers.<AccountDto>query().eq("email",email));
+    }
+    private boolean existsAccountByUsername(String username){
+        return this.baseMapper.exists(Wrappers.<AccountDto>query().eq("username",username));
+    }
     @Override
     public String registerEmailVerifyCode(String type, String email, String ip) {
         synchronized (ip.intern()){
@@ -41,7 +72,7 @@ public class AccountServiceImp extends ServiceImpl<AccountMapper, AccountDto> im
             Map<String, Object> data = Map.of("type",type,"email",email,"code",code);
             amqpTemplate.convertAndSend("mail",data);
             redisTemplate.opsForValue()
-                    .set(Const.VERIFY_EMAIL_DATA + email,String.valueOf(code),3, TimeUnit.MINUTES);
+                    .set(Const.VERIFY_EMAIL_DATA + email,String.valueOf(code),5, TimeUnit.MINUTES);
             return null;
         }
     }

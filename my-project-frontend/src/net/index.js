@@ -59,11 +59,11 @@ function get(url,success,failure=defaultFailure){
 
 }
 function post(url,data,success,failure=defaultFailure){
-    internalGet(url,data,accessHeader(),success,failure)
+    internalPost(url,data,accessHeader(),success,failure)
 
 }
 function internalGet(url,header,success,failure=defaultFailure,error=defaultError){
-    axios.get(url, {header: header})
+    axios.get(url, {headers: header})
         .then(({data})=>{
             if(data.code === 200){
                 success(data.data)
@@ -87,10 +87,11 @@ function  login(username,password,remember,success,failure=defaultFailure){
             success(data)
         })
 }
-function logout(){
+function logout(success){
     internalGet("/api/auth/logout",accessHeader(),()=>{
         deleteAccessToke()
         ElMessage.success("退出登录成功，欢迎您再次使用！")
+        success()
     })
 }
 export {login,get,post,logout,isUnAuthorized}

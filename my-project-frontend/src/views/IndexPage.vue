@@ -1,7 +1,9 @@
 <script setup>
 import {logout} from '@/net/index.js'
+import router from "@/router";
+
 function userLogout(){
-  logout()
+  logout(()=>router.push("/"))
 }
 </script>
 

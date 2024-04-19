@@ -20,8 +20,10 @@
   function userLogin(){
     formRef.value.validate((valid)=>{
       if(valid)
-        login(form.username,form.password,form.remember,()=> {})
-        router.push('/index')
+        login(form.username,form.password,form.remember,
+            ()=> {
+              router.push('/index')
+            })
     })
   }
 </script>
@@ -67,7 +69,7 @@
       <span style="font-size: 13px;color: grey">没有账号？</span>
     </el-divider>
     <div style="margin-top: 30px">
-      <el-button style="width: 270px"type="warning">立即登录</el-button>
+      <el-button @click="router.push('/register')" style="width: 270px"type="warning">立即注册</el-button>
     </div>
   </div>
 </template>
