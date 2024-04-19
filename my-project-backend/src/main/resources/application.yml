@@ -14,3 +14,12 @@ spring:
       host: 192.168.171.199
       port: 6379
       password: 123scc
+  mail:
+    host: smtp.163.com
+    username: scc_20220@163.com
+    password: HQJTQUTRJRTKHIAA
+  rabbitmq:
+    addresses: 192.168.171.131
+    username: admin
+    password: 123scc
+    virtual-host: /
