@@ -2,6 +2,7 @@ package edu.hubu.utils;
 
 public class Const {
     public static final String JWT_BLACK_LIST = "jwt:blacklist:";
+    public static final String ATTR_USER_ID = "user:id:";
     public static final String VERIFY_EMAIL_LIMIT = "verify:email:limit:";
     public static final String VERIFY_EMAIL_DATA = "verify:email:data:";
     public static final String FLOW_LIMIT_COUNT = "flow:count:";

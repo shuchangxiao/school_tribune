@@ -14,4 +14,5 @@ public interface AccountService extends IService<AccountDto>, UserDetailsService
     String registerEmailAccount(EmailRegisterVO vo);
     String resetConfirm(ConfirmResetVO vo);
     String resetPassword(EmailResetVO vo);
+    AccountDto findAccountById(int id);
 }

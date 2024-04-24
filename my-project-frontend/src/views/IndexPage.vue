@@ -1,18 +1,73 @@
 <script setup>
 import {logout} from '@/net/index.js'
 import router from "@/router";
+import {userStore} from "@/store/index.js";
+import {ref} from "vue";
+import {get} from "@/net/index.js";
 
+const loading = ref(true)
+const store = userStore()
+get("/api/user/info",(data)=>{
+  store.user = data
+  loading.value = false
+})
 function userLogout(){
   logout(()=>router.push("/"))
 }
 </script>
 
 <template>
-  <div>
-    <el-button @click="userLogout">退出登录</el-button>
+  <div class="main-content" v-loading="loading" element-loading-text="正在加载，请稍后...">
+    <el-container style="height: 100%;" v-if="!loading">
+      <el-header class="main-content-height">
+        <el-image class="logo" src="https://element-plus.org/images/element-plus-logo.svg"></el-image>
+        <div style="flex:1;" class="user-info">
+          <div class="profile">
+            <div>{{ store.user.username }}</div>
+            <div>{{ store.user.email }}</div>
+          </div>
+          <el-avatar src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png"></el-avatar>
+        </div>
+      </el-header>
+      <el-container>
+        <el-aside width="200px">Aside</el-aside>
+        <el-main>Main</el-main>
+      </el-container>
+    </el-container>
   </div>
 </template>
 
-<style scoped>
 
+<style lang="less" scoped>
+.main-content{
+  height: 100vh;
+  width: 100vw;
+}
+.main-content-height{
+  border-bottom: solid 1px var(--el-border-color);
+  height: 55px;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  .logo{
+    height: 32px;
+  }
+  .user-info{
+    display: flex;
+    justify-content: flex-end;
+    .profile{
+      text-align: right;
+      margin-right: 20px;
+      :first-child{
+        font-size: 18px;
+        font-weight:bold;
+        line-height:20px;
+      }
+      :last-child{
+        font-size: 12px;
+        color: grey;
+      }
+    }
+  }
+}
 </style>

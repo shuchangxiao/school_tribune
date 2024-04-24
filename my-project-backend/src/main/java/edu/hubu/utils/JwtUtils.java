@@ -10,9 +10,7 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import edu.hubu.service.Imp.MyUserDetail;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
@@ -114,7 +112,6 @@ public String creatJwt(MyUserDetail userDetails){
     public UserDetails toUser(DecodedJWT jwt){
         Map<String, Claim> claimMap = jwt.getClaims();
         return User.withUsername(claimMap.get("username").asString())
-                .password("******")
 //                .authorities(claimMap.get("authorities").asString())
                 .build();
     }

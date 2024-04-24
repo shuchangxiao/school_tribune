@@ -16,16 +16,13 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.sql.Wrapper;
 import java.util.Date;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -45,7 +42,7 @@ public class AccountServiceImp extends ServiceImpl<AccountMapper, AccountDto> im
     @Override
     public String resetConfirm(ConfirmResetVO vo) {
         String key = Const.VERIFY_EMAIL_DATA + vo.getEmail();
-        String code = (String) stringRedisTemplate.opsForValue().get(key);
+        String code = stringRedisTemplate.opsForValue().get(key);
         if (code == null) return "请先获取验证码";
         if (!code.equals(vo.getCode())) return "验证码错误，请重新输入";
         return null;
@@ -66,7 +63,7 @@ public class AccountServiceImp extends ServiceImpl<AccountMapper, AccountDto> im
     @Override
     public String registerEmailAccount(EmailRegisterVO vo) {
         String email = vo.getEmail();
-        String code = (String) stringRedisTemplate.opsForValue().get(Const.VERIFY_EMAIL_DATA+email);
+        String code = stringRedisTemplate.opsForValue().get(Const.VERIFY_EMAIL_DATA+email);
         if (code == null) return "请先获取验证码";
         if(!code.equals(vo.getCode())) return "验证码输入错误，请重新输入";
         if(this.existsAccountByEmail(email)) return "此电子邮箱已经被注册";
@@ -125,13 +122,19 @@ public class AccountServiceImp extends ServiceImpl<AccountMapper, AccountDto> im
                 .one();
 
     }
+
+    @Override
+    public AccountDto findAccountById(int id) {
+        return this.query().eq("id",id).one();
+    }
+
     private boolean verifyLimit(String ip){
         String key = Const.VERIFY_EMAIL_LIMIT + ip;
         return flowUtils.limitOneCheck(key,60);
     }
 
     @Override
-    public void afterPropertiesSet() throws Exception {
+    public void afterPropertiesSet(){
         rabbitTemplate.setMessageConverter(new Jackson2JsonMessageConverter());
     }
 }

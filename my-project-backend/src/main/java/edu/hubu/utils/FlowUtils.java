@@ -1,7 +1,7 @@
 package edu.hubu.utils;
 
 import jakarta.annotation.Resource;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.TimeUnit;
@@ -9,12 +9,12 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class FlowUtils {
     @Resource
-    RedisTemplate redisTemplate;
+    StringRedisTemplate stringredisTemplate;
     public boolean limitOneCheck(String key ,int blockTime){
-        if(Boolean.TRUE.equals(redisTemplate.hasKey(key))){
+        if(Boolean.TRUE.equals(stringredisTemplate.hasKey(key))){
             return false;
         } else {
-            redisTemplate.opsForValue()
+            stringredisTemplate.opsForValue()
                     .set(key,"",blockTime, TimeUnit.SECONDS);
             return true;
         }

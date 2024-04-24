@@ -2,6 +2,7 @@ package edu.hubu.filter;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
 import edu.hubu.config.SecurityConfiguration;
+import edu.hubu.utils.Const;
 import edu.hubu.utils.JwtUtils;
 import jakarta.annotation.Resource;
 import jakarta.servlet.FilterChain;
@@ -31,7 +32,7 @@ public class JwtAuthorizeFilter extends OncePerRequestFilter {
             UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(userDetails,null,userDetails.getAuthorities());
             authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-            request.setAttribute("id",jwtUtils.toInt(jwt));
+            request.setAttribute(Const.ATTR_USER_ID,jwtUtils.toInt(jwt));
         }
         filterChain.doFilter(request,response);
     }
