@@ -5,8 +5,6 @@ import edu.hubu.utils.Const;
 import jakarta.annotation.Resource;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -27,11 +25,10 @@ public class FlowLimitFilter extends HttpFilter {
     public void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
         String addr = request.getRemoteAddr();
         if(this.tryCount(addr)){
-            chain.doFilter(request,response);
+            super.doFilter(request,response,chain);
         }else {
             this.writerBlockMessage(response);
         }
-        super.doFilter(request, response, chain);
     }
     private void writerBlockMessage(HttpServletResponse response) throws IOException {
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
