@@ -31,7 +31,7 @@ public class JwtUtils {
     @Value("${spring.security.jwt.expire}")
     int EXPIRE;
     @Resource
-    RedisTemplate redisTemplate;
+    StringRedisTemplate stringRedisTemplate;
     public boolean invalidateJwt(String headerToken){
         String token = this.convertToken(headerToken);
         Algorithm algorithm = Algorithm.HMAC256(KEY);
@@ -49,11 +49,11 @@ public class JwtUtils {
         }
         Date now = new Date();
         long expire = Math.max(time.getTime() - now.getTime(),0);
-        redisTemplate.opsForValue().set(Const.JWT_BLACK_LIST+uuid,"",expire, TimeUnit.MILLISECONDS);
+        stringRedisTemplate.opsForValue().set(Const.JWT_BLACK_LIST+uuid,"",expire, TimeUnit.MILLISECONDS);
         return true;
     }
     public boolean isInvalidJwt(String uuid){
-        return Boolean.TRUE.equals(redisTemplate.hasKey(Const.JWT_BLACK_LIST + uuid));
+        return Boolean.TRUE.equals(stringRedisTemplate.hasKey(Const.JWT_BLACK_LIST + uuid));
     }
     public DecodedJWT resolveJwt(String headerToken){
         String token = this.convertToken(headerToken);
@@ -89,13 +89,14 @@ public class JwtUtils {
 public String creatJwt(MyUserDetail userDetails){
     // 使用HMAC256算法创建JWT签名算法
     Algorithm algorithm = Algorithm.HMAC256(KEY);
+    Date X = expireTime();
     return JWT.create() // 创建JWT
             .withJWTId(UUID.randomUUID().toString())
             .withClaim("id",userDetails.getId()) // 添加用户ID作为JWT的声明
             .withClaim("username",userDetails.getUsername()) // 添加用户名作为JWT的声明
             // 将用户权限转换为字符串列表，并添加到JWT的声明中
 //            .withClaim("authorities",userDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList())
-            .withExpiresAt(expireTime()) // 设置JWT的过期时间
+            .withExpiresAt(X) // 设置JWT的过期时间
             .withIssuedAt(new Date()) // 设置JWT的发行时间
             .sign(algorithm); // 使用算法签名JWT
 

@@ -27,7 +27,8 @@
 <style scoped>
 .right-card{
   width: 400px;
-  z-index: 99;
+  z-index:1;
+  background-color: var(--el-bg-color);
 }
 .welcome-title{
   position: absolute;
