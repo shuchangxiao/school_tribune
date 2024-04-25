@@ -20,7 +20,7 @@ function userLogout(){
   <div class="main-content" v-loading="loading" element-loading-text="正在加载，请稍后...">
     <el-container style="height: 100%;" v-if="!loading">
       <el-header class="main-content-height">
-        <el-image class="logo" src="https://element-plus.org/images/element-plus-logo.svg"></el-image>
+        <el-image class="logo" src="https://www.itbaima.cn/image/logo/logo-light.png"></el-image>
         <div style="flex:1;" class="user-info">
           <div class="profile">
             <div>{{ store.user.username }}</div>

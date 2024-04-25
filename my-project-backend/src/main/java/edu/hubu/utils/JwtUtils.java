@@ -113,6 +113,7 @@ public String creatJwt(MyUserDetail userDetails){
         Map<String, Claim> claimMap = jwt.getClaims();
         return User.withUsername(claimMap.get("username").asString())
 //                .authorities(claimMap.get("authorities").asString())
+                .password("******")
                 .build();
     }
     public Integer toInt(DecodedJWT jwt){
