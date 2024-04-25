@@ -1,4 +1,5 @@
 <script setup>
+
 import {logout} from '@/net/index.js'
 import router from "@/router";
 import {userStore} from "@/store/index.js";
@@ -69,7 +70,7 @@ function userLogout(){
       <el-container>
         <el-aside width="200px">
           <el-scrollbar style="height: calc(100vh - 55px)">
-            <el-menu default-active="1-1">
+            <el-menu router :default-active="$route.path">
               <el-sub-menu index="1">
                 <template #title>
                   <el-icon><Location/></el-icon>
@@ -149,7 +150,7 @@ function userLogout(){
                   <el-icon><Location/></el-icon>
                   <span>个人设置</span>
                 </template>
-                <el-menu-item>
+                <el-menu-item index="/index/user-setting">
                   <template #title>
                     <el-icon><ChatDotSquare/></el-icon>
                     个人信息设置
@@ -165,7 +166,15 @@ function userLogout(){
             </el-menu>
           </el-scrollbar>
         </el-aside>
-        <el-main>Main</el-main>
+        <el-main class="main-content-page">
+          <el-scrollbar style="height: calc(100vh - 55px)">
+            <router-view  v-slot="{ Component }">
+              <transition name="el-fade-in-linear" mode="out-in">
+                <component :is="Component"/>
+              </transition>
+            </router-view>
+          </el-scrollbar>
+        </el-main>
       </el-container>
     </el-container>
   </div>
@@ -208,4 +217,11 @@ function userLogout(){
     }
   }
 }
+.main-content-page{
+  padding: 0;
+  background-color: #f7f8fa;
+}
+//.dark .main-content-page{
+//  background-color: #242627;
+//}
 </style>

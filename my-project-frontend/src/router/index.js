@@ -27,7 +27,14 @@ const router = createRouter({
         {
             name:'index',
             path:'/index',
-            component:()=>import('@/views/IndexPage.vue')
+            component:()=>import('@/views/IndexPage.vue'),
+            children:[
+                {
+                    path: "user-setting",
+                    name: "user-setting",
+                    component:()=>import("@/views/settings/UserSetting.vue")
+                }
+            ]
         }
     ]
 })
