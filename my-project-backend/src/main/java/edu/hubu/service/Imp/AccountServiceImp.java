@@ -6,6 +6,7 @@ import edu.hubu.entity.dto.AccountDto;
 import edu.hubu.entity.vo.request.ConfirmResetVO;
 import edu.hubu.entity.vo.request.EmailRegisterVO;
 import edu.hubu.entity.vo.request.EmailResetVO;
+import edu.hubu.entity.vo.request.ModifyEmailVO;
 import edu.hubu.mapper.AccountMapper;
 import edu.hubu.service.AccountService;
 import edu.hubu.utils.Const;
@@ -63,7 +64,7 @@ public class AccountServiceImp extends ServiceImpl<AccountMapper, AccountDto> im
     @Override
     public String registerEmailAccount(EmailRegisterVO vo) {
         String email = vo.getEmail();
-        String code = stringRedisTemplate.opsForValue().get(Const.VERIFY_EMAIL_DATA+email);
+        String code =getEmailVerifyCode(email);
         if (code == null) return "请先获取验证码";
         if(!code.equals(vo.getCode())) return "验证码输入错误，请重新输入";
         if(this.existsAccountByEmail(email)) return "此电子邮箱已经被注册";
@@ -83,6 +84,12 @@ public class AccountServiceImp extends ServiceImpl<AccountMapper, AccountDto> im
     }
     private boolean existsAccountByUsername(String username){
         return this.baseMapper.exists(Wrappers.<AccountDto>query().eq("username",username));
+    }
+    private String getEmailVerifyCode(String email){
+        return stringRedisTemplate.opsForValue().get(Const.VERIFY_EMAIL_DATA + email);
+    }
+    private void  deleteEmailVerify(String email){
+        stringRedisTemplate.delete(Const.VERIFY_EMAIL_DATA + email);
     }
     @Override
     public String registerEmailVerifyCode(String type, String email, String ip) {
@@ -112,6 +119,20 @@ public class AccountServiceImp extends ServiceImpl<AccountMapper, AccountDto> im
         MyUserDetail myUserDetail = new MyUserDetail();
         myUserDetail.setAccountDto(accountDto);
         return myUserDetail;
+    }
+
+    @Override
+    public String modifyEmail(int id, ModifyEmailVO vo) {
+        String code =getEmailVerifyCode(vo.getEmail());
+        if (code == null) return "请先获取验证码";
+        if(!code.equals(vo.getCode())) return "验证码输入错误，请重新输入";
+        this.deleteEmailVerify(vo.getEmail());
+        AccountDto accountDto = this.findAccountByNameOrEmail(vo.getEmail());
+        if(accountDto !=null && accountDto.getId() != id){
+            return "该电子邮件已经被注册,无法完成此操作";
+        }
+        this.update().eq("id",id).set("email",vo.getEmail()).update();
+        return null;
     }
 
     @Override

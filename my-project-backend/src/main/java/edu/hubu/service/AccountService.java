@@ -5,6 +5,7 @@ import edu.hubu.entity.dto.AccountDto;
 import edu.hubu.entity.vo.request.ConfirmResetVO;
 import edu.hubu.entity.vo.request.EmailRegisterVO;
 import edu.hubu.entity.vo.request.EmailResetVO;
+import edu.hubu.entity.vo.request.ModifyEmailVO;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 
@@ -15,4 +16,5 @@ public interface AccountService extends IService<AccountDto>, UserDetailsService
     String resetConfirm(ConfirmResetVO vo);
     String resetPassword(EmailResetVO vo);
     AccountDto findAccountById(int id);
+    String modifyEmail(int id, ModifyEmailVO vo);
 }
