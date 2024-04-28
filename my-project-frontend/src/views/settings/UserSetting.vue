@@ -7,7 +7,7 @@ import {computed, reactive,ref} from "vue";
 import {post,get} from "@/net/index.js";
 import {ElMessage} from "element-plus";
 
-const isEmailValid = computed(()=>/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(form.email))
+const isEmailValid = computed(()=>/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(emailForm.email))
 
 const store = userStore()
 const baseFormRef = ref()
@@ -44,9 +44,6 @@ const rules = {
   email:[
     {required:true,message:"请输入邮箱",trigger:['blur','change']},
     {type:'email',message: "请输入合法的电子邮件",trigger: ['blur','change']}
-  ],
-  code:[
-    {required:true,message:"请输入验证码",trigger:['blur','change']}
   ]
 }
 const loading = reactive({
@@ -82,7 +79,7 @@ get("/api/user/detail",data=>{
 })
 function sendEmailCode(){
   codeTime.value = 60
-    get(`/api/auth/ask-code?email=${emailForm.email}&code=${emailForm.code}&type=modify`,()=>{
+    get(`/api/auth/ask-code?email=${emailForm.email}&type=modify`,()=>{
       ElMessage.success("验证码已经发送，请注意查收")
       const handle = setInterval(()=>{
         codeTime.value--
@@ -145,7 +142,7 @@ function modifyEmail(){
           </el-form-item>
           <el-form-item prop="code">
             <el-row style="width: 100%" gutter="10">
-              <el-col :span="18">
+              <el-col :span="17">
                 <el-input maxlength="6" type="text" placeholder="请输入验证码" v-model="emailForm.code">
                   <template #prefix>
                     <el-icon><EditPen/></el-icon>
@@ -153,16 +150,16 @@ function modifyEmail(){
                 </el-input>
               </el-col>
               <el-col :span="6">
-                <el-button type="success" style="width: 100%">
-                  获取验证码
+                <el-button  @click="sendEmailCode" type="success" :disabled="!isEmailValid || codeTime">
+                  {{codeTime>0?`请稍后在试${codeTime}秒`:"获取验证码"}}
                 </el-button>
               </el-col>
             </el-row>
           </el-form-item>
           <div>
-            <el-button :icon="Refresh" @click="sendEmailCode" type="success" :disabled="!isEmailValid || codeTime">
-              {{codeTime>0?`请稍后在试${codeTime}秒`:"获取验证码"}}
-            </el-button>
+            <div>
+              <el-button  @click="modifyEmail" :icon="Select" type="success">保存用户信息</el-button>
+            </div>
           </div>
         </el-form>
       </Card>
@@ -176,7 +173,7 @@ function modifyEmail(){
           </div>
           <el-divider style="margin: 10px 0"></el-divider>
           <div style="font-size: 14px;color: grey;padding: 10px">
-            {{desc || "这个用户很懒，没有填写个人简介"}}
+            {{baseForm.desc || "这个用户很懒，没有填写个人简介"}}
           </div>
         </Card>
         <Card>
