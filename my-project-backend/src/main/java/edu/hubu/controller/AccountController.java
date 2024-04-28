@@ -3,6 +3,7 @@ package edu.hubu.controller;
 import edu.hubu.entity.RestBean;
 import edu.hubu.entity.dto.AccountDetail;
 import edu.hubu.entity.dto.AccountDto;
+import edu.hubu.entity.vo.request.ChangePasswordVO;
 import edu.hubu.entity.vo.request.DetailSaveVO;
 import edu.hubu.entity.vo.request.ModifyEmailVO;
 import edu.hubu.entity.vo.response.AccountDetailVO;
@@ -15,6 +16,7 @@ import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 
 @RestController
 @RequestMapping("/api/user")
@@ -23,27 +25,42 @@ public class AccountController {
     AccountService accountService;
     @Resource
     AccountDetailService accountDetailService;
+
     @GetMapping("/info")
-    public RestBean<AccountVO> info(@RequestAttribute(Const.ATTR_USER_ID) int id){
+    public RestBean<AccountVO> info(@RequestAttribute(Const.ATTR_USER_ID) int id) {
         AccountDto accountById = accountService.findAccountById(id);
         AccountVO viewObject = accountById.asViewObject(AccountVO.class);
         return RestBean.success(viewObject);
     }
+
     @GetMapping("/detail")
-    public RestBean<AccountDetailVO> detail(@RequestAttribute(Const.ATTR_USER_ID) int id){
+    public RestBean<AccountDetailVO> detail(@RequestAttribute(Const.ATTR_USER_ID) int id) {
         AccountDetail accountDetail = Optional
                 .ofNullable(accountDetailService.findAccountDetailById(id))
                 .orElseGet(AccountDetail::new);
         return RestBean.success(accountDetail.asViewObject(AccountDetailVO.class));
     }
+
     @PostMapping("/save-detail")
-    public RestBean<Void> saveDetail(@RequestAttribute(Const.ATTR_USER_ID) int id, @RequestBody @Valid DetailSaveVO vo){
-        boolean success = accountDetailService.saveAccountDetail(id,vo);
-        return success ? RestBean.success(null):RestBean.failure(400,"用户名已被注册");
+    public RestBean<Void> saveDetail(@RequestAttribute(Const.ATTR_USER_ID) int id, @RequestBody @Valid DetailSaveVO vo) {
+        boolean success = accountDetailService.saveAccountDetail(id, vo);
+        return success ? RestBean.success(null) : RestBean.failure(400, "用户名已被注册");
     }
+
     @PostMapping("/modify")
-    public RestBean<Void> modifyEmail(@RequestAttribute(Const.ATTR_USER_ID) int id, @RequestBody @Valid ModifyEmailVO vo){
-        String result = accountService.modifyEmail(id,vo);
-        return result==null ? RestBean.success():RestBean.failure(400,result);
+    public RestBean<Void> modifyEmail(@RequestAttribute(Const.ATTR_USER_ID) int id, @RequestBody @Valid ModifyEmailVO vo) {
+        String result = accountService.modifyEmail(id, vo);
+        return result == null ? RestBean.success() : RestBean.failure(400, result);
+    }
+
+    @PostMapping("/change-password")
+    public RestBean<Void> changePassword(@RequestAttribute(Const.ATTR_USER_ID) int id, @RequestBody @Valid ChangePasswordVO vo) {
+        return messageHandle(()->accountService.changePassword(id,vo));
+    }
+
+    private RestBean<Void> messageHandle(Supplier<String> action) {
+        String message = action.get();
+        return message == null ? RestBean.success() : RestBean.failure(400, message);
+
     }
 }
