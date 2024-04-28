@@ -3,7 +3,7 @@
 import Card from "@/components/Card.vue";
 import {Lock, Setting} from "@element-plus/icons-vue"
 import {reactive,ref} from "vue";
-import {post} from "@/net/index.js";
+import {post,get} from "@/net/index.js";
 import {ElMessage} from "element-plus";
 
 const form = reactive({
@@ -47,20 +47,45 @@ function resetPassword(){
     }
   })
 }
+const privacy = reactive({
+  phone:false,
+  wechat:false,
+  qq:false,
+  email:false,
+  gender:false,
+})
+const  save = ref(true)
+get("api/user/privacy",(data)=>{
+  privacy.email = data.email
+  privacy.qq = data.qq
+  privacy.wechat = data.wechat
+  privacy.gender = data.gender
+  privacy.phone = data.phone
+  save.value = false
+})
+function savePrivacy(type,status){
+  save.value = true
+  post('api/user/save-privacy',{
+    type:type,
+    status: status
+  },()=>{
+    ElMessage.success("隐私设置修改成功")
+    save.value = false
+  })
+}
 </script>
 
 <template>
   <div>
     <div style="margin:auto;max-width: 600px">
       <div style="margin-top: 20px">
-        <Card :icon="Setting" title="隐私设置" desc="在这里你可以设置那些内容可以被其他人看到">
+        <Card v-loading="save" :icon="Setting" title="隐私设置" desc="在这里你可以设置那些内容可以被其他人看到">
           <div class="checkbox-list">
-            <el-checkbox>公开展示我的手机号</el-checkbox>
-            <el-checkbox>公开展示我的电子邮件</el-checkbox>
-            <el-checkbox>公开展示我的微信号</el-checkbox>
-            <el-checkbox>公开展示我的qq号</el-checkbox>
-            <el-checkbox>公开展示我的性别</el-checkbox>
-            <el-checkbox></el-checkbox>
+            <el-checkbox @change="savePrivacy('phone',privacy.phone)" v-model="privacy.phone">公开展示我的手机号</el-checkbox>
+            <el-checkbox @change="savePrivacy('email',privacy.email)" v-model="privacy.email">公开展示我的电子邮件</el-checkbox>
+            <el-checkbox @change="savePrivacy('wechat',privacy.wechat)" v-model="privacy.wechat">公开展示我的微信号</el-checkbox>
+            <el-checkbox @change="savePrivacy('qq',privacy.qq)" v-model="privacy.qq">公开展示我的qq号</el-checkbox>
+            <el-checkbox @change="savePrivacy('gender',privacy.gender)" v-model="privacy.gender">公开展示我的性别</el-checkbox>
           </div>
         </Card>
         <Card style="margin-top: 20px" :icon="Setting" title="修改密码" desc="修改密码请在这里操作，请务必牢记你的密码">

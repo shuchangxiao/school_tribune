@@ -6,9 +6,12 @@ import edu.hubu.entity.dto.AccountDto;
 import edu.hubu.entity.vo.request.ChangePasswordVO;
 import edu.hubu.entity.vo.request.DetailSaveVO;
 import edu.hubu.entity.vo.request.ModifyEmailVO;
+import edu.hubu.entity.vo.request.PrivacySaveVO;
 import edu.hubu.entity.vo.response.AccountDetailVO;
+import edu.hubu.entity.vo.response.AccountPrivacyVO;
 import edu.hubu.entity.vo.response.AccountVO;
 import edu.hubu.service.AccountDetailService;
+import edu.hubu.service.AccountPrivacyService;
 import edu.hubu.service.AccountService;
 import edu.hubu.utils.Const;
 import jakarta.annotation.Resource;
@@ -25,6 +28,8 @@ public class AccountController {
     AccountService accountService;
     @Resource
     AccountDetailService accountDetailService;
+    @Resource
+    AccountPrivacyService accountPrivacyService;
 
     @GetMapping("/info")
     public RestBean<AccountVO> info(@RequestAttribute(Const.ATTR_USER_ID) int id) {
@@ -56,6 +61,15 @@ public class AccountController {
     @PostMapping("/change-password")
     public RestBean<Void> changePassword(@RequestAttribute(Const.ATTR_USER_ID) int id, @RequestBody @Valid ChangePasswordVO vo) {
         return messageHandle(()->accountService.changePassword(id,vo));
+    }
+    @PostMapping("/save-privacy")
+    public RestBean<Void> savePrivacy(@RequestAttribute(Const.ATTR_USER_ID) int id, @RequestBody @Valid PrivacySaveVO vo){
+        accountPrivacyService.savePrivacy(id,vo);
+        return RestBean.success();
+    }
+    @GetMapping("/privacy")
+    public RestBean<AccountPrivacyVO> privacy(@RequestAttribute(Const.ATTR_USER_ID) int id){
+        return RestBean.success(accountPrivacyService.accountPrivacy(id).asViewObject(AccountPrivacyVO.class));
     }
 
     private RestBean<Void> messageHandle(Supplier<String> action) {
