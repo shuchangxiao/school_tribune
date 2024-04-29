@@ -94,4 +94,4 @@ function logout(success){
         success()
     })
 }
-export {login,get,post,logout,isUnAuthorized}
+export {login,get,post,logout,isUnAuthorized,accessHeader}

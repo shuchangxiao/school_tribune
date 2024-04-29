@@ -67,7 +67,7 @@ public class AccountServiceImp extends ServiceImpl<AccountMapper, AccountDto> im
         if(this.existsAccountByEmail(email)) return "此电子邮箱已经被注册";
         if(this.existsAccountByUsername(vo.getUsername())) return "此用户名已经被注册";
         String password = encoder.encode(vo.getPassword());
-        AccountDto accountDto = new AccountDto(null,vo.getUsername(),password, vo.getEmail(), "user",new Date());
+        AccountDto accountDto = new AccountDto(null,vo.getUsername(),password, vo.getEmail(), "user",new Date(),null);
         if(this.save(accountDto)) {
             stringRedisTemplate.delete(Const.VERIFY_EMAIL_DATA+email);
             return null;
