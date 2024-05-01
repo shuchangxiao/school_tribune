@@ -1,6 +1,7 @@
-package edu.hubu.service;
+package edu.hubu.controller;
 
 import edu.hubu.entity.RestBean;
+import edu.hubu.service.ImageService;
 import io.minio.errors.ErrorResponseException;
 import jakarta.annotation.Resource;
 import jakarta.servlet.ServletOutputStream;
