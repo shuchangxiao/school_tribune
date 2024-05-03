@@ -160,7 +160,7 @@ public class AccountServiceImp extends ServiceImpl<AccountMapper, AccountDto> im
 
     private boolean verifyLimit(String ip){
         String key = Const.VERIFY_EMAIL_LIMIT + ip;
-        return flowUtils.limitOneCheck(key,60);
+        return flowUtils.limitOnceCheck(key,60);
     }
 
     @Override

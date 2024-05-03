@@ -70,7 +70,7 @@ function userLogout(){
       <el-container>
         <el-aside width="200px">
           <el-scrollbar style="height: calc(100vh - 55px)">
-            <el-menu router :default-active="$route.path">
+            <el-menu router :default-active="$route.path" :default-openeds="['1','2','3']">
               <el-sub-menu index="1">
                 <template #title>
                   <el-icon><Location/></el-icon>

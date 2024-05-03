@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import edu.hubu.entity.vo.response.WeatherVO;
 import edu.hubu.service.WeatherService;
+import edu.hubu.utils.Const;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,7 +38,7 @@ public class WeatherServiceImp implements WeatherService {
         JSONObject location = jsonObject.getJSONArray("location").getJSONObject(0);
         int id = location.getInteger("id");
 
-        String key = "weather:" +id;
+        String key = Const.FORUM_WEATHER_CACHE +id;
         String cache = stringRedisTemplate.opsForValue().get(key);
         if(cache != null)
             return JSONObject.parseObject(cache).to(WeatherVO.class);

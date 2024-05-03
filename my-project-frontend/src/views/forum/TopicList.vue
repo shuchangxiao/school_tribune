@@ -3,10 +3,12 @@ import {Collection,Link,Edit} from "@element-plus/icons-vue"
 import Card from "@/components/Card.vue";
 import LightCard from "@/components/LightCard.vue";
 import Weather from "@/components/Weather.vue";
-import {computed, reactive} from "vue";
+import {computed, reactive,ref} from "vue";
 import {get} from "@/net/index.js";
 import {ElMessage} from "element-plus";
+import TopicEditor from "@/components/TopicEditor.vue";
 
+const editor = ref(false)
 const today = computed(()=>{
   const data = new Date()
   return `${data.getFullYear()} 年 ${data.getMonth()+1} 月 ${data.getDate()} 日`
@@ -41,7 +43,7 @@ navigator.geolocation.getCurrentPosition((position)=>{
   <div style="display: flex;margin: 20px auto;gap: 20px;max-width: 900px">
     <div style="flex: 1">
       <LightCard>
-        <div class="edit-topic">
+        <div class="edit-topic" @click="editor=true">
           <el-icon style="translate: 0 3px"><Edit/></el-icon>
           点击发表主题。。。
         </div>
@@ -103,6 +105,7 @@ navigator.geolocation.getCurrentPosition((position)=>{
 <!--        </div>-->
       </div>
     </div>
+    <topic-editor :show="editor" @close="editor=false"/>
   </div>
 </template>
 

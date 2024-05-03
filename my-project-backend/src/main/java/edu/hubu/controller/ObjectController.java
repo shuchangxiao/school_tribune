@@ -10,17 +10,18 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 @Slf4j
 @RestController
-
 public class ObjectController {
     @Resource
     ImageService imageService;
-    @GetMapping("/images/avatar/**")
+    @GetMapping("/images/**")
     public void imageFetch(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        response.setHeader("Content-Type","image/png");
         this.fetchImage(request,response);
     }
     private void fetchImage(HttpServletRequest request, HttpServletResponse response) throws Exception {
