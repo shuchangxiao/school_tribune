@@ -14,6 +14,7 @@ import edu.hubu.service.AccountDetailService;
 import edu.hubu.service.AccountPrivacyService;
 import edu.hubu.service.AccountService;
 import edu.hubu.utils.Const;
+import edu.hubu.utils.ControllerUtils;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -30,6 +31,8 @@ public class AccountController {
     AccountDetailService accountDetailService;
     @Resource
     AccountPrivacyService accountPrivacyService;
+    @Resource
+    ControllerUtils controllerUtils;
 
     @GetMapping("/info")
     public RestBean<AccountVO> info(@RequestAttribute(Const.ATTR_USER_ID) int id) {
@@ -60,7 +63,7 @@ public class AccountController {
 
     @PostMapping("/change-password")
     public RestBean<Void> changePassword(@RequestAttribute(Const.ATTR_USER_ID) int id, @RequestBody @Valid ChangePasswordVO vo) {
-        return messageHandle(()->accountService.changePassword(id,vo));
+        return controllerUtils.messageHandle(()->accountService.changePassword(id,vo));
     }
     @PostMapping("/save-privacy")
     public RestBean<Void> savePrivacy(@RequestAttribute(Const.ATTR_USER_ID) int id, @RequestBody @Valid PrivacySaveVO vo){
@@ -72,9 +75,5 @@ public class AccountController {
         return RestBean.success(accountPrivacyService.accountPrivacy(id).asViewObject(AccountPrivacyVO.class));
     }
 
-    private RestBean<Void> messageHandle(Supplier<String> action) {
-        String message = action.get();
-        return message == null ? RestBean.success() : RestBean.failure(400, message);
 
-    }
 }

@@ -5,6 +5,7 @@ import edu.hubu.entity.vo.request.ConfirmResetVO;
 import edu.hubu.entity.vo.request.EmailRegisterVO;
 import edu.hubu.entity.vo.request.EmailResetVO;
 import edu.hubu.service.AccountService;
+import edu.hubu.utils.ControllerUtils;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -22,15 +23,17 @@ import java.util.function.Supplier;
 public class AuthorizeController {
     @Resource
     AccountService accountService;
+    @Resource
+    ControllerUtils controllerUtils;
     @GetMapping("/ask-code")
     public RestBean<Void> askVerifyCode(@RequestParam @Email String email,
                                         @RequestParam @Pattern(regexp ="(register|reset|modify)") String type, HttpServletRequest request){
-        return this.messageHandle(
+        return controllerUtils.messageHandle(
                 () -> accountService.registerEmailVerifyCode(type,email,request.getRemoteAddr()));
     }
     @PostMapping("/register")
     public RestBean<Void> register(@RequestBody @Valid EmailRegisterVO vo){
-        return this.messageHandle(
+        return controllerUtils.messageHandle(
                 ()->accountService.registerEmailAccount(vo));
     }
     @PostMapping("/reset-config")
@@ -42,10 +45,7 @@ public class AuthorizeController {
         return this.messageHandle(vo,accountService::resetPassword);
     }
     private <T> RestBean<Void> messageHandle(T vo, Function<T,String> function){
-        return this.messageHandle(()->function.apply(vo));
+        return controllerUtils.messageHandle(()->function.apply(vo));
     }
-    private RestBean<Void> messageHandle(Supplier<String> action){
-        String message = action.get();
-        return message == null?RestBean.success():RestBean.failure(400,message);
-    }
+
 }

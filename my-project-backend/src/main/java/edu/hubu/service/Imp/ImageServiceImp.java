@@ -35,13 +35,14 @@ public class ImageServiceImp  extends ServiceImpl<ImageStoreMapper, StoreImage> 
     AccountMapper accountMapper;
     @Resource
     FlowUtils flowUtils;
-    final String IMAGE_PARTITION = "/avatar/";
+    final String AVATAR_PARTITION = "/avatar/";
+    final String CACHE_PARTITION = "/cache/";
     final String IMAGE_BUCKET = "study";
     @Transactional
     @Override
     public String uploadAvatar(MultipartFile file, int id) throws IOException {
         String imageName = UUID.randomUUID().toString().replace("-","");
-        imageName = IMAGE_PARTITION + imageName;
+        imageName = AVATAR_PARTITION + imageName;
         PutObjectArgs args = PutObjectArgs.builder()
                 .bucket(IMAGE_BUCKET)
                 .stream(file.getInputStream(), file.getSize(), -1)
@@ -81,9 +82,9 @@ public class ImageServiceImp  extends ServiceImpl<ImageStoreMapper, StoreImage> 
         String imageName = UUID.randomUUID().toString().replace("-","");
         Date date = new Date();
         SimpleDateFormat format = new SimpleDateFormat("yyyyMMdd");
-        imageName = "/cache/"+format.format(date)+"/"+imageName;
+        imageName = CACHE_PARTITION+format.format(date)+"/"+imageName;
         PutObjectArgs args = PutObjectArgs.builder()
-                .bucket("study")
+                .bucket(IMAGE_BUCKET)
                 .stream(file.getInputStream(),file.getSize(),-1)
                 .object(imageName)
                 .build();

@@ -16,6 +16,7 @@ public class Const {
     public static final int ORDER_LIMIT = -101;
     // 论坛相关
     public static final String FORUM_WEATHER_CACHE = "weather:cache:";
-    public static final String FORUM_IMAGE_COUNTER = "weather:image:";
+    public static final String FORUM_IMAGE_COUNTER = "forum:image:";
+    public static final String FORUM_TOPIC_CREATE_COUNTER = "forum:create:topic:";
 
 }
