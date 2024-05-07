@@ -11,4 +11,5 @@ public class TopicTypeVO {
     Integer id;
     String name;
     String desc;
+    String color;
 }

@@ -9,6 +9,8 @@ import {ElMessage} from "element-plus";
 import TopicEditor from "@/components/TopicEditor.vue";
 
 const editor = ref(false)
+const list = ref(null)
+get("/api/forum/list-topic?page=0&type=0",data=>list.value=data)
 const today = computed(()=>{
   const data = new Date()
   return `${data.getFullYear()} 年 ${data.getMonth()+1} 月 ${data.getDate()} 日`
@@ -53,9 +55,10 @@ navigator.geolocation.getCurrentPosition((position)=>{
 
         </LightCard>
       </div>
-      <div style="margin-top: 10px" v-for="item in 10">
-        <LightCard style="height: 150px">
-
+      <div style="margin-top: 10px" v-for="item in list">
+        <LightCard>
+          <div>{{item.title}}</div>
+          <div>{{item.text}}</div>
         </LightCard>
       </div>
     </div>

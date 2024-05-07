@@ -3,6 +3,7 @@ package edu.hubu.controller;
 import edu.hubu.entity.RestBean;
 import edu.hubu.entity.dto.TopicType;
 import edu.hubu.entity.vo.request.TopicCreateVO;
+import edu.hubu.entity.vo.response.TopicPreviewVO;
 import edu.hubu.entity.vo.response.TopicTypeVO;
 import edu.hubu.entity.vo.response.WeatherVO;
 import edu.hubu.service.TopicService;
@@ -10,6 +11,8 @@ import edu.hubu.service.WeatherService;
 import edu.hubu.utils.ControllerUtils;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -41,5 +44,9 @@ public class ForumController {
     @PostMapping("/creat-topic")
     public RestBean<Void> createTopic(@Valid @RequestBody TopicCreateVO vo ,@RequestAttribute(Const.ATTR_USER_ID) int id){
         return controllerUtils.messageHandle(()->topicService.createTopic(id,vo));
+    }
+    @GetMapping("/list-topic")
+    public RestBean<List<TopicPreviewVO>> listTopicPreview(@RequestParam @Min(0) @Max(100) int page, @RequestParam @Min(0) int type){
+        return RestBean.success(topicService.listTopicPreview(page,type));
     }
 }

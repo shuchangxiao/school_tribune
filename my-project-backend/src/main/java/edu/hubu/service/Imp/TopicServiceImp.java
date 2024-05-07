@@ -1,14 +1,17 @@
 package edu.hubu.service.Imp;
 
+import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.databind.util.BeanUtil;
 import edu.hubu.entity.dto.Topic;
 import edu.hubu.entity.dto.TopicType;
 import edu.hubu.entity.vo.request.TopicCreateVO;
+import edu.hubu.entity.vo.response.TopicPreviewVO;
 import edu.hubu.mapper.TopicMapper;
 import edu.hubu.mapper.TopicTypeMapper;
 import edu.hubu.service.TopicService;
+import edu.hubu.utils.CacheUtils;
 import edu.hubu.utils.Const;
 import edu.hubu.utils.FlowUtils;
 import jakarta.annotation.PostConstruct;
@@ -16,9 +19,7 @@ import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,6 +28,8 @@ public class TopicServiceImp extends ServiceImpl<TopicMapper, Topic> implements 
     TopicTypeMapper topicTypeMapper;
     @Resource
     FlowUtils flowUtils;
+    @Resource
+    CacheUtils cacheUtils;
     private  Set<Integer> types = null;
     @Override
     public List<TopicType> topicType() {
@@ -47,8 +50,51 @@ public class TopicServiceImp extends ServiceImpl<TopicMapper, Topic> implements 
         topic.setContent(vo.getContent().toJSONString());
         topic.setUid(uid);
         topic.setTime(new Date());
-        if(this.save((topic))) return null;
+        if(this.save((topic))) {
+            cacheUtils.deleteCache(Const.FORUM_TOPIC_PREVIEW_CACHE + "*");
+            return null;
+        }
         else return "内部出现错误，请联系管理员";
+
+    }
+
+    @Override
+    public List<TopicPreviewVO> listTopicPreview(int page, int type) {
+        String key = Const.FORUM_TOPIC_PREVIEW_CACHE + page +":" + type;
+        List<TopicPreviewVO> list = cacheUtils.takeListFromCache(key, TopicPreviewVO.class);
+        if(list!=null) return list;
+        List<TopicPreviewVO> previewVOList= null;
+        List<Topic> topics;
+        if(type == 0){
+            topics = baseMapper.topicList(page *10);
+        }else {
+            topics = baseMapper.topicListByType(page *10,type);
+        }
+        if(topics.isEmpty()) return null;
+        previewVOList = topics.stream().map(this::resolveToPreview).toList();
+        cacheUtils.saveListToCache(key,previewVOList,60);
+        return previewVOList;
+    }
+    private TopicPreviewVO resolveToPreview(Topic topic){
+        TopicPreviewVO vo = new TopicPreviewVO();
+        BeanUtils.copyProperties(topic,vo);
+        List<String> images = new ArrayList<>();
+        StringBuilder previewText = new StringBuilder();
+        JSONArray ops = JSONObject.parseObject(topic.getContent()).getJSONArray("ops");
+        for (Object op : ops) {
+            Object insert = JSONObject.from(op).get("insert");
+            if(insert instanceof String text){
+                if(previewText.length()>=300) continue;
+                previewText.append(text);
+            }else if(insert instanceof Map<?,?> map){
+                Optional
+                        .ofNullable(map.get("image"))
+                        .ifPresent(object -> images.add(object.toString()));
+            }
+        }
+        vo.setText(previewText.length()>300 ? previewText.substring(0,300) : previewText.substring(0,previewText.length()));
+        vo.setImage(images);
+        return vo;
 
     }
     private boolean textLimitCheck(JSONObject object){

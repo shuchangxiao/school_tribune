@@ -9,6 +9,7 @@ import axios from "axios";
 import {accessHeader, post} from "@/net/index.js";
 import {ElMessage} from "element-plus";
 import {get} from "@/net/index.js";
+import ColorDot from "@/components/ColorDot.vue";
 
 defineProps({
   show:Boolean
@@ -148,7 +149,13 @@ Quill.register("modules/ImageExtend",ImageExtend)
       <div style="display: flex;gap: 10px">
         <div style="width: 150px">
           <el-select placeholder="请选择主题类型" v-model="editor.type" :disabled="!editor.types.length">
-            <el-option v-for="item in editor.types" :value="item.id" :label="item.name"></el-option>
+            <el-option v-for="item in editor.types" :value="item.id" :label="item.name" :style="{color:item.color}">
+              <div>
+                <color-dot :color="item.color"/>
+                <span style="margin-left: 5px">{{item.name}}}</span>
+              </div>
+            </el-option>
+
           </el-select>
         </div>
         <div style="flex: 1">
