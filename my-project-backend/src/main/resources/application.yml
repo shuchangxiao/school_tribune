@@ -29,3 +29,7 @@ spring:
     password: "password"
   weather:
     key: dfa1f36ddbc143fc8a1aed173cff2f49
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB

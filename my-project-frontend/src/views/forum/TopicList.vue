@@ -1,5 +1,5 @@
 <script setup>
-import {Collection,Link,Edit} from "@element-plus/icons-vue"
+import {Collection,Link,Edit,Clock} from "@element-plus/icons-vue"
 import Card from "@/components/Card.vue";
 import LightCard from "@/components/LightCard.vue";
 import Weather from "@/components/Weather.vue";
@@ -7,10 +7,19 @@ import {computed, reactive,ref} from "vue";
 import {get} from "@/net/index.js";
 import {ElMessage} from "element-plus";
 import TopicEditor from "@/components/TopicEditor.vue";
+import {userStore} from "@/store/index.js";
+import axios from "axios";
 
+get("/api/forum/types",(data)=> {
+  store.forum.types = data
+})
 const editor = ref(false)
 const list = ref(null)
-get("/api/forum/list-topic?page=0&type=0",data=>list.value=data)
+const store = userStore()
+function updateList(){
+  get("/api/forum/list-topic?page=0&type=0",data=>list.value=data)
+}
+updateList()
 const today = computed(()=>{
   const data = new Date()
   return `${data.getFullYear()} 年 ${data.getMonth()+1} 月 ${data.getDate()} 日`
@@ -39,6 +48,9 @@ navigator.geolocation.getCurrentPosition((position)=>{
   timeout:3000,
   enableHighAccuracy:true
 })
+function success(){
+
+}
 </script>
 
 <template>
@@ -56,9 +68,29 @@ navigator.geolocation.getCurrentPosition((position)=>{
         </LightCard>
       </div>
       <div style="margin-top: 10px" v-for="item in list">
-        <LightCard>
-          <div>{{item.title}}</div>
-          <div>{{item.text}}</div>
+        <LightCard class="topic-card">
+          <div style="display: flex">
+            <div>
+              <el-avatar :size="30" :src="`${axios.defaults.baseURL}/images${item.avatar}`"/>
+            </div>
+            <div style="margin-left: 7px">
+              <div style="font-size: 13px">{{item.username}}</div>
+              <div  style="font-size: 12px;color: grey">
+                <el-icon><Clock></Clock></el-icon>
+                <span style="margin-left: 2px;display:inline-block;transform: translateY(-1.5px)">{{new Date(item.time).toLocaleString()}}</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="topic-type" :style="{color:store.findTypeById(item.type)?.color,'border-color':store.findTypeById(item.type)?.color+'77','background':store.findTypeById(item.type)?.color+'33'}"
+                 >{{ store.findTypeById(item.type)?.name }}</div>
+            <span style="font-weight: bold;margin-left: 7px">{{item.title}}</span>
+          </div>
+          <div class="topic-content">{{item.text}}</div>
+          <div style="display: grid;grid-template-columns: repeat(3,1fr);grid-gap: 10px" >
+            <el-image class="topic-image" v-for="img in item.image" :src="img" fit="cover"></el-image>
+          </div>
+
         </LightCard>
       </div>
     </div>
@@ -108,11 +140,42 @@ navigator.geolocation.getCurrentPosition((position)=>{
 <!--        </div>-->
       </div>
     </div>
-    <topic-editor :show="editor" @success="editor=false" @close="editor=false"/>
+    <topic-editor :show="editor" @success="editor=false;updateList()" @close="editor=false"/>
   </div>
 </template>
 
 <style lang="less" scoped>
+.topic-card{
+  padding: 15px;
+  transition: scale .3s;
+  &:hover{
+    scale: 1.05;
+    cursor: pointer;
+  }
+  .topic-content{
+    font-size: 13px;
+    color:grey;
+    margin-top: 5px;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .topic-type{
+    display: inline-block;
+    border:solid 0.5px grey;
+    border-radius: 5px;
+    font-size: 12px;
+    padding: 0 5px;
+  }
+  .topic-image{
+    width: 100%;
+    height: 100%;
+    border-radius: 5px;
+    max-height: 110px;
+  }
+}
 .info-text{
   display: flex;
   margin-top: 20px;

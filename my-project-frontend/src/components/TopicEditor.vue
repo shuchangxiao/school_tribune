@@ -8,9 +8,10 @@ import {ImageExtend,QuillWatch} from "quill-image-super-solution-module"
 import axios from "axios";
 import {accessHeader, post} from "@/net/index.js";
 import {ElMessage} from "element-plus";
+import {userStore} from "@/store/index.js";
 import {get} from "@/net/index.js";
 import ColorDot from "@/components/ColorDot.vue";
-
+const store = userStore()
 defineProps({
   show:Boolean
 })
@@ -20,16 +21,13 @@ const editor = reactive({
   title:'',
   text:'',
   loading:false,
-  types:[]
 })
 function initEditor(){
   refEditor.value.setContents("","user")
   editor.title=""
   editor.type = null
 }
-get("/api/forum/types",(data)=> {
-  editor.types = data
-})
+
 const emit = defineEmits(['close','success'])
 // const types = [
 //   {id:1,name:"日常闲聊",desc:"在这里分享你的日常"},
@@ -46,7 +44,7 @@ function deltaToText(delta){
 }
 const typePlaceholder = computed(()=> {
   if(editor.type==null) return "请输入您要发表帖子的主题"
-  return editor.types[editor.type-1]["desc"]
+  return store.forum.types[editor.type-1]["desc"]
 })
 const contentLength= computed(()=>deltaToText(editor.text).length)
 function submitTopic(){
@@ -148,8 +146,8 @@ Quill.register("modules/ImageExtend",ImageExtend)
       </template>
       <div style="display: flex;gap: 10px">
         <div style="width: 150px">
-          <el-select placeholder="请选择主题类型" v-model="editor.type" :disabled="!editor.types.length">
-            <el-option v-for="item in editor.types" :value="item.id" :label="item.name" :style="{color:item.color}">
+          <el-select placeholder="请选择主题类型" v-model="editor.type" :disabled="!store.forum.types.length">
+            <el-option v-for="item in store.forum.types" :value="item.id" :label="item.name" :style="{color:item.color}">
               <div>
                 <color-dot :color="item.color"/>
                 <span style="margin-left: 5px">{{item.name}}}</span>
