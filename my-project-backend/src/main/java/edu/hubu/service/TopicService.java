@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import edu.hubu.entity.dto.Topic;
 import edu.hubu.entity.dto.TopicType;
 import edu.hubu.entity.vo.request.TopicCreateVO;
+import edu.hubu.entity.vo.response.TopicDetailVO;
 import edu.hubu.entity.vo.response.TopicPreviewVO;
 import edu.hubu.entity.vo.response.TopicTopVO;
 
@@ -14,4 +15,5 @@ public interface TopicService extends IService<Topic> {
     String createTopic(int uid, TopicCreateVO vo);
     List<TopicPreviewVO> listTopicPreview(int page,int type);
     List<TopicTopVO> listTopTopics();
+    TopicDetailVO getTopic(int tid);
 }

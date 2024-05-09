@@ -18,6 +18,5 @@ public class Topic implements BaseData {
     Integer uid;
     Integer type;
     Date time;
-    String username;
-    String avatar;
+
 }

@@ -3,10 +3,7 @@ package edu.hubu.controller;
 import edu.hubu.entity.RestBean;
 import edu.hubu.entity.dto.TopicType;
 import edu.hubu.entity.vo.request.TopicCreateVO;
-import edu.hubu.entity.vo.response.TopicPreviewVO;
-import edu.hubu.entity.vo.response.TopicTopVO;
-import edu.hubu.entity.vo.response.TopicTypeVO;
-import edu.hubu.entity.vo.response.WeatherVO;
+import edu.hubu.entity.vo.response.*;
 import edu.hubu.service.TopicService;
 import edu.hubu.service.WeatherService;
 import edu.hubu.utils.ControllerUtils;
@@ -53,5 +50,10 @@ public class ForumController {
     @GetMapping("/top-topic")
     public RestBean<List<TopicTopVO>> topTopic(){
         return RestBean.success(topicService.listTopTopics());
+    }
+
+    @GetMapping("/topic")
+    public RestBean<TopicDetailVO> topic(@RequestParam @Min(0) int tid){
+        return RestBean.success(topicService.getTopic(tid));
     }
 }

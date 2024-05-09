@@ -9,6 +9,8 @@ import TopicEditor from "@/components/TopicEditor.vue";
 import {userStore} from "@/store/index.js";
 import axios from "axios";
 import ColorDot from "@/components/ColorDot.vue";
+import router from "@/router/index.js";
+import TopicTag from "@/components/TopicTag.vue";
 
 const editor = ref(false)
 const topics = reactive({
@@ -29,19 +31,13 @@ const weather = reactive({
   hourly:[],
   success:false
 })
-get("/api/forum/types",(data)=> {
-  const array = []
-  array.push({name: "全部",id:0,color:"linear-gradient(45deg,white,red,orange,gold,green,blue)"})
-  data.forEach(d => array.push(d))
-  store.forum.types = array
-})
+
 get("/api/forum/top-topic",data=>{
   if(data) topics.top=data
 })
 
 function updateList(){
   if(topics.end) {
-    ElMessage.warning("你已经划到底部了，不要在划啦")
     return
   }
   get(`/api/forum/list-topic?page=${topics.page}&type=${topics.type}`, data=> {
@@ -104,7 +100,7 @@ watch(()=>topics.type,()=> {
         </div>
       </LightCard>
       <LightCard style="margin-top: 10px;display: flex;flex-direction: column;gap: 10px">
-        <div v-for="item in topics.top" class="top-topic">
+        <div v-for="item in topics.top" class="top-topic" @click="router.push(`index/topic-detail/${item.id}`)">
           <el-tag type="info" size="small">置顶</el-tag>
           <div>{{item.title}}</div>
           <div>{{new Date(item.time).toLocaleString()}}</div>
@@ -121,7 +117,7 @@ watch(()=>topics.type,()=> {
       <transition name="el-fade-in" mode="out-in">
         <div v-if="topics.list.length">
           <div style="margin-top: 10px;display: flex;flex-direction: column;gap: 10px" v-infinite-scroll="updateList">
-            <LightCard class="topic-card" v-for="item in topics.list">
+            <LightCard class="topic-card" v-for="item in topics.list" @click="router.push('/index/topic-detail/'+item.id)">
               <div style="display: flex">
                 <div>
                   <el-avatar :size="30" :src="`${axios.defaults.baseURL}/images${item.avatar}`"/>
@@ -135,8 +131,7 @@ watch(()=>topics.type,()=> {
                 </div>
               </div>
               <div>
-                <div class="topic-type" :style="{color:store.findTypeById(item.type)?.color,'border-color':store.findTypeById(item.type)?.color+'77','background':store.findTypeById(item.type)?.color+'33'}"
-                >{{ store.findTypeById(item.type)?.name }}</div>
+                <TopicTag :type="item.type"/>
                 <span style="font-weight: bold;margin-left: 7px">{{item.title}}</span>
               </div>
               <div class="topic-content">{{item.text}}</div>
@@ -254,13 +249,7 @@ watch(()=>topics.type,()=> {
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .topic-type{
-    display: inline-block;
-    border:solid 0.5px grey;
-    border-radius: 5px;
-    font-size: 12px;
-    padding: 0 5px;
-  }
+
   .topic-image{
     width: 100%;
     height: 100%;

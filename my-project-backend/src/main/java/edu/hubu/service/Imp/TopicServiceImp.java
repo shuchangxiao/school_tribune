@@ -3,15 +3,15 @@ package edu.hubu.service.Imp;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.databind.util.BeanUtil;
-import edu.hubu.entity.dto.Topic;
-import edu.hubu.entity.dto.TopicType;
+import edu.hubu.entity.dto.*;
 import edu.hubu.entity.vo.request.TopicCreateVO;
+import edu.hubu.entity.vo.response.TopicDetailVO;
 import edu.hubu.entity.vo.response.TopicPreviewVO;
 import edu.hubu.entity.vo.response.TopicTopVO;
-import edu.hubu.mapper.TopicMapper;
-import edu.hubu.mapper.TopicTypeMapper;
+import edu.hubu.mapper.*;
 import edu.hubu.service.TopicService;
 import edu.hubu.utils.CacheUtils;
 import edu.hubu.utils.Const;
@@ -32,6 +32,12 @@ public class TopicServiceImp extends ServiceImpl<TopicMapper, Topic> implements 
     FlowUtils flowUtils;
     @Resource
     CacheUtils cacheUtils;
+    @Resource
+    AccountMapper accountMapper;
+    @Resource
+    AccountDetailMapper accountDetailMapper;
+    @Resource
+    AccountPrivacyMapper accountPrivacyMapper;
     private  Set<Integer> types = null;
     @Override
     public List<TopicType> topicType() {
@@ -61,17 +67,18 @@ public class TopicServiceImp extends ServiceImpl<TopicMapper, Topic> implements 
     }
 
     @Override
-    public List<TopicPreviewVO> listTopicPreview(int page, int type) {
-        String key = Const.FORUM_TOPIC_PREVIEW_CACHE + page +":" + type;
+    public List<TopicPreviewVO> listTopicPreview(int pageNumber, int type) {
+        String key = Const.FORUM_TOPIC_PREVIEW_CACHE + pageNumber +":" + type;
         List<TopicPreviewVO> list = cacheUtils.takeListFromCache(key, TopicPreviewVO.class);
         if(list!=null) return list;
         List<TopicPreviewVO> previewVOList= null;
-        List<Topic> topics;
+        Page<Topic> page = Page.of(pageNumber,10);
         if(type == 0){
-            topics = baseMapper.topicList(page *10);
+            baseMapper.selectPage(page,Wrappers.<Topic>query().orderByDesc("time"));
         }else {
-            topics = baseMapper.topicListByType(page *10,type);
+            baseMapper.selectPage(page,Wrappers.<Topic>query().eq("type",type).orderByDesc("time"));
         }
+        List<Topic> topics = page.getRecords();
         if(topics.isEmpty()) return null;
         previewVOList = topics.stream().map(this::resolveToPreview).toList();
         cacheUtils.saveListToCache(key,previewVOList,60);
@@ -89,8 +96,28 @@ public class TopicServiceImp extends ServiceImpl<TopicMapper, Topic> implements 
                 .toList();
     }
 
+    @Override
+    public TopicDetailVO getTopic(int tid) {
+        Topic topic = baseMapper.selectById(tid);
+        if(topic == null) return null;
+        TopicDetailVO vo = new TopicDetailVO();
+        BeanUtils.copyProperties(topic,vo);
+        TopicDetailVO.User user = new TopicDetailVO.User();
+        vo.setUser(this.fillUserDetailsByPrivacy(user,topic.getUid()));
+        return vo;
+    }
+    private <T> T fillUserDetailsByPrivacy(T target,int uid){
+        AccountDetail accountDetail = accountDetailMapper.selectById(uid);
+        AccountDto accountDto = accountMapper.selectById(uid);
+        AccountPrivacy accountPrivacy = accountPrivacyMapper.selectById(uid);
+        String[] ignores = accountPrivacy.hiddenFields();
+        BeanUtils.copyProperties(accountDto,target,ignores);
+        BeanUtils.copyProperties(accountDetail,target,ignores);
+        return target;
+    }
     private TopicPreviewVO resolveToPreview(Topic topic){
         TopicPreviewVO vo = new TopicPreviewVO();
+        BeanUtils.copyProperties(accountMapper.selectOne(Wrappers.<AccountDto>query().eq("id",topic.getUid())),vo);
         BeanUtils.copyProperties(topic,vo);
         List<String> images = new ArrayList<>();
         StringBuilder previewText = new StringBuilder();
