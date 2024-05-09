@@ -147,10 +147,10 @@ Quill.register("modules/ImageExtend",ImageExtend)
       <div style="display: flex;gap: 10px">
         <div style="width: 150px">
           <el-select placeholder="请选择主题类型" v-model="editor.type" :disabled="!store.forum.types.length">
-            <el-option v-for="item in store.forum.types" :value="item.id" :label="item.name" :style="{color:item.color}">
+            <el-option v-for="item in store.forum.types.filter(type => type.id>0)" :value="item.id" :label="item.name" :style="{color:item.color}">
               <div>
                 <color-dot :color="item.color"/>
-                <span style="margin-left: 5px">{{item.name}}}</span>
+                <span style="margin-left: 5px">{{item.name}}</span>
               </div>
             </el-option>
 

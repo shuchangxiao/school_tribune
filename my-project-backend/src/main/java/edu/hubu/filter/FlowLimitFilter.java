@@ -47,8 +47,8 @@ public class FlowLimitFilter extends HttpFilter {
         String key = Const.FLOW_LIMIT_COUNT + ip;
         if(Boolean.TRUE.equals(stringRedisTemplate.hasKey(key))){
             Long increment = Optional.ofNullable(stringRedisTemplate.opsForValue().increment(key)).orElse(0L);
-            if(increment >=30){
-                stringRedisTemplate.opsForValue().set(Const.FLOW_LIMIT_BLOCK,"",30,TimeUnit.SECONDS);
+            if(increment >=100){
+                stringRedisTemplate.opsForValue().set(key,"",3,TimeUnit.SECONDS);
                 return false;
             }
         }else {

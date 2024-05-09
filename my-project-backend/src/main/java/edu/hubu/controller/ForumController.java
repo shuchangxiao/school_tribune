@@ -4,6 +4,7 @@ import edu.hubu.entity.RestBean;
 import edu.hubu.entity.dto.TopicType;
 import edu.hubu.entity.vo.request.TopicCreateVO;
 import edu.hubu.entity.vo.response.TopicPreviewVO;
+import edu.hubu.entity.vo.response.TopicTopVO;
 import edu.hubu.entity.vo.response.TopicTypeVO;
 import edu.hubu.entity.vo.response.WeatherVO;
 import edu.hubu.service.TopicService;
@@ -48,5 +49,9 @@ public class ForumController {
     @GetMapping("/list-topic")
     public RestBean<List<TopicPreviewVO>> listTopicPreview(@RequestParam @Min(0) @Max(100) int page, @RequestParam @Min(0) int type){
         return RestBean.success(topicService.listTopicPreview(page,type));
+    }
+    @GetMapping("/top-topic")
+    public RestBean<List<TopicTopVO>> topTopic(){
+        return RestBean.success(topicService.listTopTopics());
     }
 }

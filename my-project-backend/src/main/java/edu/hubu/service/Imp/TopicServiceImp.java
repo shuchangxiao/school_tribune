@@ -2,12 +2,14 @@ package edu.hubu.service.Imp;
 
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.databind.util.BeanUtil;
 import edu.hubu.entity.dto.Topic;
 import edu.hubu.entity.dto.TopicType;
 import edu.hubu.entity.vo.request.TopicCreateVO;
 import edu.hubu.entity.vo.response.TopicPreviewVO;
+import edu.hubu.entity.vo.response.TopicTopVO;
 import edu.hubu.mapper.TopicMapper;
 import edu.hubu.mapper.TopicTypeMapper;
 import edu.hubu.service.TopicService;
@@ -75,6 +77,18 @@ public class TopicServiceImp extends ServiceImpl<TopicMapper, Topic> implements 
         cacheUtils.saveListToCache(key,previewVOList,60);
         return previewVOList;
     }
+
+    @Override
+    public List<TopicTopVO> listTopTopics() {
+        List<Topic> topics = this.baseMapper.selectList(Wrappers
+                .<Topic>query()
+                .select("id","title","time")
+                .eq("top",1));
+        return topics.stream()
+                .map(topic -> topic.asViewObject(TopicTopVO.class))
+                .toList();
+    }
+
     private TopicPreviewVO resolveToPreview(Topic topic){
         TopicPreviewVO vo = new TopicPreviewVO();
         BeanUtils.copyProperties(topic,vo);

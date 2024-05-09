@@ -1,25 +1,24 @@
 <script setup>
-import {Collection,Link,Edit,Clock} from "@element-plus/icons-vue"
-import Card from "@/components/Card.vue";
+import {Collection,Link,Edit,Clock,Document,Compass,Picture,Microphone} from "@element-plus/icons-vue"
 import LightCard from "@/components/LightCard.vue";
 import Weather from "@/components/Weather.vue";
-import {computed, reactive,ref} from "vue";
+import {computed, reactive,ref,watch} from "vue";
 import {get} from "@/net/index.js";
 import {ElMessage} from "element-plus";
 import TopicEditor from "@/components/TopicEditor.vue";
 import {userStore} from "@/store/index.js";
 import axios from "axios";
+import ColorDot from "@/components/ColorDot.vue";
 
-get("/api/forum/types",(data)=> {
-  store.forum.types = data
-})
 const editor = ref(false)
-const list = ref(null)
+const topics = reactive({
+  list:[],
+  type:0,
+  page:0,
+  end:false,
+  top:[]
+})
 const store = userStore()
-function updateList(){
-  get("/api/forum/list-topic?page=0&type=0",data=>list.value=data)
-}
-updateList()
 const today = computed(()=>{
   const data = new Date()
   return `${data.getFullYear()} 年 ${data.getMonth()+1} 月 ${data.getDate()} 日`
@@ -30,6 +29,40 @@ const weather = reactive({
   hourly:[],
   success:false
 })
+get("/api/forum/types",(data)=> {
+  const array = []
+  array.push({name: "全部",id:0,color:"linear-gradient(45deg,white,red,orange,gold,green,blue)"})
+  data.forEach(d => array.push(d))
+  store.forum.types = array
+})
+get("/api/forum/top-topic",data=>{
+  if(data) topics.top=data
+})
+
+function updateList(){
+  if(topics.end) {
+    ElMessage.warning("你已经划到底部了，不要在划啦")
+    return
+  }
+  get(`/api/forum/list-topic?page=${topics.page}&type=${topics.type}`, data=> {
+    if(data != null) {
+      data.forEach(d => topics.list.push(d))
+      topics.page++
+    }
+    if(!data || data.length<10) topics.end =true
+  })
+}
+function onTopicCreate(){
+  editor.value=false
+  reset()
+  updateList()
+}
+function reset(){
+  topics.page=0
+  topics.end=false
+  topics.list=[]
+}
+
 navigator.geolocation.getCurrentPosition((position)=>{
   const longitude = position.coords.longitude
   const latitude = position.coords.latitude
@@ -48,9 +81,10 @@ navigator.geolocation.getCurrentPosition((position)=>{
   timeout:3000,
   enableHighAccuracy:true
 })
-function success(){
-
-}
+watch(()=>topics.type,()=> {
+  reset()
+  updateList()
+},{immediate:true})
 </script>
 
 <template>
@@ -61,38 +95,59 @@ function success(){
           <el-icon style="translate: 0 3px"><Edit/></el-icon>
           点击发表主题。。。
         </div>
+        <div style="margin-top: 10px;display: flex;font-size: 18px;color: grey;gap: 10px">
+          <el-icon><Edit/></el-icon>
+          <el-icon><Document/></el-icon>
+          <el-icon><Compass/></el-icon>
+          <el-icon><Picture/></el-icon>
+          <el-icon><Microphone/></el-icon>
+        </div>
       </LightCard>
-      <div style="margin-top: 10px">
-        <LightCard style="height: 30px">
-
+      <LightCard style="margin-top: 10px;display: flex;flex-direction: column;gap: 10px">
+        <div v-for="item in topics.top" class="top-topic">
+          <el-tag type="info" size="small">置顶</el-tag>
+          <div>{{item.title}}</div>
+          <div>{{new Date(item.time).toLocaleString()}}</div>
+        </div>
+      </LightCard>
+      <div style="margin-top: 10px;">
+        <LightCard style="margin-top: 10px;display: flex;gap: 7px">
+            <div :class="`type-select-card ${topics.type === item.id ? 'active' :''}`" v-for="item in store.forum.types" @click="topics.type=item.id">
+              <color-dot :color="item.color"></color-dot>
+              <span>{{item.name}}</span>
+            </div>
         </LightCard>
       </div>
-      <div style="margin-top: 10px" v-for="item in list">
-        <LightCard class="topic-card">
-          <div style="display: flex">
-            <div>
-              <el-avatar :size="30" :src="`${axios.defaults.baseURL}/images${item.avatar}`"/>
-            </div>
-            <div style="margin-left: 7px">
-              <div style="font-size: 13px">{{item.username}}</div>
-              <div  style="font-size: 12px;color: grey">
-                <el-icon><Clock></Clock></el-icon>
-                <span style="margin-left: 2px;display:inline-block;transform: translateY(-1.5px)">{{new Date(item.time).toLocaleString()}}</span>
+      <transition name="el-fade-in" mode="out-in">
+        <div v-if="topics.list.length">
+          <div style="margin-top: 10px;display: flex;flex-direction: column;gap: 10px" v-infinite-scroll="updateList">
+            <LightCard class="topic-card" v-for="item in topics.list">
+              <div style="display: flex">
+                <div>
+                  <el-avatar :size="30" :src="`${axios.defaults.baseURL}/images${item.avatar}`"/>
+                </div>
+                <div style="margin-left: 7px">
+                  <div style="font-size: 13px">{{item.username}}</div>
+                  <div  style="font-size: 12px;color: grey">
+                    <el-icon><Clock></Clock></el-icon>
+                    <span style="margin-left: 2px;display:inline-block;transform: translateY(-1.5px)">{{new Date(item.time).toLocaleString()}}</span>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-          <div>
-            <div class="topic-type" :style="{color:store.findTypeById(item.type)?.color,'border-color':store.findTypeById(item.type)?.color+'77','background':store.findTypeById(item.type)?.color+'33'}"
-                 >{{ store.findTypeById(item.type)?.name }}</div>
-            <span style="font-weight: bold;margin-left: 7px">{{item.title}}</span>
-          </div>
-          <div class="topic-content">{{item.text}}</div>
-          <div style="display: grid;grid-template-columns: repeat(3,1fr);grid-gap: 10px" >
-            <el-image class="topic-image" v-for="img in item.image" :src="img" fit="cover"></el-image>
-          </div>
+              <div>
+                <div class="topic-type" :style="{color:store.findTypeById(item.type)?.color,'border-color':store.findTypeById(item.type)?.color+'77','background':store.findTypeById(item.type)?.color+'33'}"
+                >{{ store.findTypeById(item.type)?.name }}</div>
+                <span style="font-weight: bold;margin-left: 7px">{{item.title}}</span>
+              </div>
+              <div class="topic-content">{{item.text}}</div>
+              <div style="display: grid;grid-template-columns: repeat(3,1fr);grid-gap: 10px" >
+                <el-image class="topic-image" v-for="img in item.image" :src="img" fit="cover"></el-image>
+              </div>
 
-        </LightCard>
-      </div>
+            </LightCard>
+          </div>
+        </div>
+      </transition>
     </div>
     <div style="width: 280px">
       <div style="position: sticky;top:20px">
@@ -140,11 +195,48 @@ function success(){
 <!--        </div>-->
       </div>
     </div>
-    <topic-editor :show="editor" @success="editor=false;updateList()" @close="editor=false"/>
+    <topic-editor :show="editor" @success="onTopicCreate" @close="editor=false"/>
   </div>
 </template>
 
 <style lang="less" scoped>
+.top-topic{
+  display: flex;
+  div:first-of-type{
+    font-size: 14px;
+    margin-left: 5px;
+    font-weight: bold;
+    opacity: 0.8;
+    transition: color .3s;
+    &:hover{
+      color:grey;
+    }
+  }
+  div:nth-of-type(2){
+    flex: 1;
+    color: grey;
+    font-size: 13px;
+    text-align: right;
+  }
+  &:hover{
+    cursor: pointer;
+  }
+}
+.type-select-card{
+  background-color: #f5f5f5;
+  padding: 2px 7px;
+  font-size: 14px;
+  border-radius: 5px;
+  box-sizing: border-box;
+  transition: background-color .3s;
+  &.active{
+    border:solid 1px #ead4c4;
+  }
+  &:hover{
+    cursor: pointer;
+    background-color: #dadada;
+  }
+}
 .topic-card{
   padding: 15px;
   transition: scale .3s;
