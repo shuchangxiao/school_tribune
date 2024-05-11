@@ -1,7 +1,10 @@
 package edu.hubu.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import edu.hubu.entity.dto.Interact;
 import edu.hubu.entity.dto.Topic;
+import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
@@ -20,4 +23,37 @@ public interface TopicMapper extends BaseMapper<Topic> {
 //        order by `time` desc limit ${start} ,10
 //        """)
 //    List<Topic> topicListByType(int start,int type);
+    @Insert("""
+        <script>
+            insert ignore into db_topic_interact_${type} values 
+            <foreach collection ="interacts" item ="item" separator =",">
+                (#{item.tid},#{item.uid},#{item.time})
+            </foreach>
+        </script>
+        """)
+    void addInteract(List<Interact> interacts,String type);
+
+    @Delete("""
+        <script>
+            delete from db_topic_interact_${type} where 
+            <foreach collection ="interacts" item ="item" separator =" or ">
+                (tid = #{item.tid} and uid = #{item.uid})
+            </foreach>
+        </script>
+        """)
+    void deleteInteract(List<Interact> interacts,String type);
+    @Select("""
+    select count(*) from db_topic_interact_${type} where tid = #{tid}
+    """)
+    int interactCount(int tid,String type);
+    @Select("""
+    select count(*) from db_topic_interact_${type} where tid = #{tid} and uid = #{uid}
+    """)
+    int userInteractCount(int tid,int uid,String type);
+    @Select("""
+    <script>
+        select tid from db_topic_interact_collect where uid = #{uid} order by time desc
+    </script>
+    """)
+    List<Integer> getCollect(int uid);
 }

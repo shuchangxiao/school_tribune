@@ -19,15 +19,21 @@ import edu.hubu.utils.FlowUtils;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
 public class TopicServiceImp extends ServiceImpl<TopicMapper, Topic> implements TopicService {
     @Resource
     TopicTypeMapper topicTypeMapper;
+    @Resource
+    StringRedisTemplate stringRedisTemplate;
     @Resource
     FlowUtils flowUtils;
     @Resource
@@ -39,6 +45,57 @@ public class TopicServiceImp extends ServiceImpl<TopicMapper, Topic> implements 
     @Resource
     AccountPrivacyMapper accountPrivacyMapper;
     private  Set<Integer> types = null;
+
+    @Override
+    public List<TopicPreviewVO> listTopicCollects(int uid) {
+        List<Integer> collect = baseMapper.getCollect(uid);
+        List<Topic> topics = this.baseMapper.selectBatchIds(collect);
+        if(topics.isEmpty()) return null;
+        return topics.stream().map(topic -> {
+            TopicPreviewVO previewVO = new TopicPreviewVO();
+            BeanUtils.copyProperties(topic,previewVO);
+            return previewVO;
+        }).toList();
+
+    }
+
+    @Override
+    public void interact(Interact interact, boolean state) {
+        String type = interact.getType();
+        synchronized (type.intern()){
+            stringRedisTemplate.opsForHash().put(type,interact.toKey(),Boolean.toString(state));
+            this.saveInteractSchedule(type);
+        }
+    }
+    ScheduledExecutorService service = Executors.newScheduledThreadPool(2);
+    private final Map<String,Boolean> state = new HashMap<>();
+    private void saveInteractSchedule(String type){
+        if (!state.getOrDefault(type,false)) {
+            state.put(type,true);
+            service.schedule(()->{
+                this.saveInteract(type);
+                state.put(type,false);
+            },3, TimeUnit.SECONDS);
+        }
+    }
+
+    private void saveInteract(String type){
+        synchronized (type.intern()){
+            List<Interact> check = new LinkedList<>();
+            List<Interact> uncheck = new LinkedList<>();
+            stringRedisTemplate.opsForHash().entries(type).forEach((k,v)->{
+                if(Boolean.parseBoolean(v.toString())){
+                    check.add(Interact.parseInteract(k.toString(),type));
+                }else {
+                    uncheck.add(Interact.parseInteract(k.toString(),type));
+                }
+            });
+            if(!check.isEmpty()) baseMapper.addInteract(check,type);
+            if(!uncheck.isEmpty()) baseMapper.deleteInteract(uncheck,type);
+            stringRedisTemplate.delete(type);
+        }
+    }
+
     @Override
     public List<TopicType> topicType() {
         return topicTypeMapper.selectList(null);
@@ -101,10 +158,22 @@ public class TopicServiceImp extends ServiceImpl<TopicMapper, Topic> implements 
         Topic topic = baseMapper.selectById(tid);
         if(topic == null) return null;
         TopicDetailVO vo = new TopicDetailVO();
+        TopicDetailVO.Interact interact = new TopicDetailVO.Interact(
+                hasInteract(tid,topic.getUid(),"like"),
+                hasInteract(tid,topic.getUid(),"collect")
+        );
+        vo.setInteract(interact);
         BeanUtils.copyProperties(topic,vo);
         TopicDetailVO.User user = new TopicDetailVO.User();
         vo.setUser(this.fillUserDetailsByPrivacy(user,topic.getUid()));
         return vo;
+    }
+    private boolean hasInteract(int tid,int uid,String type){
+        String key = tid + ":" + uid;
+        if(stringRedisTemplate.opsForHash().hasKey(type,key)){
+            return Boolean.parseBoolean(Objects.requireNonNull(stringRedisTemplate.opsForHash().get(type, key)).toString());
+        }
+        return baseMapper.userInteractCount(tid,uid,type) > 0;
     }
     private <T> T fillUserDetailsByPrivacy(T target,int uid){
         AccountDetail accountDetail = accountDetailMapper.selectById(uid);
@@ -119,6 +188,8 @@ public class TopicServiceImp extends ServiceImpl<TopicMapper, Topic> implements 
         TopicPreviewVO vo = new TopicPreviewVO();
         BeanUtils.copyProperties(accountMapper.selectOne(Wrappers.<AccountDto>query().eq("id",topic.getUid())),vo);
         BeanUtils.copyProperties(topic,vo);
+        vo.setLike(baseMapper.interactCount(topic.getId(),"like"));
+        vo.setCollect(baseMapper.interactCount(topic.getId(),"collect"));
         List<String> images = new ArrayList<>();
         StringBuilder previewText = new StringBuilder();
         JSONArray ops = JSONObject.parseObject(topic.getContent()).getJSONArray("ops");

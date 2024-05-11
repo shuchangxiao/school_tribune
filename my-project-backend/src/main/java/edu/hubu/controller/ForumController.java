@@ -1,6 +1,7 @@
 package edu.hubu.controller;
 
 import edu.hubu.entity.RestBean;
+import edu.hubu.entity.dto.Interact;
 import edu.hubu.entity.dto.TopicType;
 import edu.hubu.entity.vo.request.TopicCreateVO;
 import edu.hubu.entity.vo.response.*;
@@ -11,8 +12,10 @@ import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Date;
 import java.util.List;
 import edu.hubu.utils.Const;
 
@@ -55,5 +58,17 @@ public class ForumController {
     @GetMapping("/topic")
     public RestBean<TopicDetailVO> topic(@RequestParam @Min(0) int tid){
         return RestBean.success(topicService.getTopic(tid));
+    }
+    @GetMapping("/interact")
+    public RestBean<Void> interact(@RequestParam @Min(0) int tid,
+                                   @RequestParam @Pattern(regexp = "(like|collect)") String type,
+                                   @RequestParam boolean state,
+                                   @RequestAttribute(Const.ATTR_USER_ID) int id){
+        topicService.interact(new Interact(tid,id,new Date(),type),state);
+        return RestBean.success();
+    }
+    @GetMapping("/collect")
+    public RestBean<List<TopicPreviewVO>> collect(@RequestAttribute(Const.ATTR_USER_ID) int id){
+        return RestBean.success(topicService.listTopicCollects(id));
     }
 }
