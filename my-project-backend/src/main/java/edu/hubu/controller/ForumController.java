@@ -4,6 +4,7 @@ import edu.hubu.entity.RestBean;
 import edu.hubu.entity.dto.Interact;
 import edu.hubu.entity.dto.TopicType;
 import edu.hubu.entity.vo.request.TopicCreateVO;
+import edu.hubu.entity.vo.request.TopicUpdateVO;
 import edu.hubu.entity.vo.response.*;
 import edu.hubu.service.TopicService;
 import edu.hubu.service.WeatherService;
@@ -56,8 +57,8 @@ public class ForumController {
     }
 
     @GetMapping("/topic")
-    public RestBean<TopicDetailVO> topic(@RequestParam @Min(0) int tid){
-        return RestBean.success(topicService.getTopic(tid));
+    public RestBean<TopicDetailVO> topic(@RequestParam @Min(0) int tid,@RequestAttribute(Const.ATTR_USER_ID) int uid){
+        return RestBean.success(topicService.getTopic(tid,uid));
     }
     @GetMapping("/interact")
     public RestBean<Void> interact(@RequestParam @Min(0) int tid,
@@ -70,5 +71,10 @@ public class ForumController {
     @GetMapping("/collect")
     public RestBean<List<TopicPreviewVO>> collect(@RequestAttribute(Const.ATTR_USER_ID) int id){
         return RestBean.success(topicService.listTopicCollects(id));
+    }
+    @PostMapping("/update-topic")
+    public RestBean<Void> updateTopic(@Valid @RequestBody TopicUpdateVO vo,
+                                      @RequestAttribute(Const.ATTR_USER_ID) int id){
+        return controllerUtils.messageHandle(()->topicService.updateTopic(id,vo));
     }
 }

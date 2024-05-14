@@ -1,7 +1,7 @@
 <script setup>
 import {Document,Check} from "@element-plus/icons-vue"
 import {reactive,computed,ref} from "vue";
-import {Quill, QuillEditor} from "@vueup/vue-quill";
+import {Delta, Quill, QuillEditor} from "@vueup/vue-quill";
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
 import ImageResize from 'quill-image-resize-vue'
 import {ImageExtend,QuillWatch} from "quill-image-super-solution-module"
@@ -12,8 +12,34 @@ import {userStore} from "@/store/index.js";
 import {get} from "@/net/index.js";
 import ColorDot from "@/components/ColorDot.vue";
 const store = userStore()
-defineProps({
-  show:Boolean
+const prop = defineProps({
+  show:Boolean,
+  defaultTitle:{
+    default:'',
+    type:String
+  },
+  defaultText:{
+    default:'',
+    type:String
+  },
+  defaultType:{
+    default:null,
+    type:Number
+  },
+  defaultButton:{
+    default:"立即发表主题",
+    type:String
+  },
+  submit :{
+    default:(editor,success)=>post("/api/forum/creat-topic",{
+      type: editor.type,
+      title: editor.title,
+      content: editor.text
+    },()=>{
+      ElMessage.success("帖子发表成功！")
+      success()
+    })
+  }
 })
 const refEditor = ref()
 const editor = reactive({
@@ -21,11 +47,13 @@ const editor = reactive({
   title:'',
   text:'',
   loading:false,
+
 })
 function initEditor(){
+  if(prop.defaultText) editor.text = new Delta(JSON.parse(prop.defaultText))
   refEditor.value.setContents("","user")
-  editor.title=""
-  editor.type = null
+  editor.title=prop.defaultTitle
+  editor.type = prop.defaultType
 }
 
 const emit = defineEmits(['close','success'])
@@ -65,14 +93,7 @@ function submitTopic(){
     ElMessage.warning("请选择合适的帖子类型")
     return
   }
-  post("/api/forum/creat-topic",{
-    type: editor.type,
-    title: editor.title,
-    content: editor.text
-  },()=>{
-    ElMessage.success("帖子发表成功！")
-    emit("success")
-  })
+  prop.submit(editor,()=>emit("success"))
 }
 const editorOptions = {
   modules:{
@@ -174,7 +195,7 @@ Quill.register("modules/ImageExtend",ImageExtend)
           当前字数{{ contentLength }}字(最大支持500字)
         </div>
         <div>
-          <el-button @click="submitTopic" type="success" :icon="Check" plain>立即发表主题</el-button>
+          <el-button @click="submitTopic" type="success" :icon="Check" plain>{{ prop.defaultButton }}</el-button>
         </div>
       </div>
     </el-drawer>
@@ -182,6 +203,7 @@ Quill.register("modules/ImageExtend",ImageExtend)
 </template>
 
 <style scoped>
+
 :deep(.el-drawer){
   width: 800px;
   margin: auto;
