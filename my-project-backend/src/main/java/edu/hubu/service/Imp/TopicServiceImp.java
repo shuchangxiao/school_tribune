@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.databind.util.BeanUtil;
 import edu.hubu.entity.dto.*;
+import edu.hubu.entity.vo.request.AddCommentVO;
 import edu.hubu.entity.vo.request.TopicCreateVO;
 import edu.hubu.entity.vo.request.TopicUpdateVO;
 import edu.hubu.entity.vo.response.TopicDetailVO;
@@ -45,6 +46,8 @@ public class TopicServiceImp extends ServiceImpl<TopicMapper, Topic> implements 
     AccountDetailMapper accountDetailMapper;
     @Resource
     AccountPrivacyMapper accountPrivacyMapper;
+    @Resource
+    TopicCommentMapper topicCommentMapper;
     private  Set<Integer> types = null;
 
     @Override
@@ -108,9 +111,24 @@ public class TopicServiceImp extends ServiceImpl<TopicMapper, Topic> implements 
     private void init(){
         types = this.topicType().stream().map(TopicType::getId).collect(Collectors.toSet());
     }
+
+    @Override
+    public String createComment(AddCommentVO vo, int uid) {
+        if(!textLimitCheck(JSONObject.parseObject(vo.getContent()),2000))
+            return "文章评论内容太多，发文失败";
+        String key = Const.FORUM_TOPIC_CREATE_COMMENT + uid;
+        if(!flowUtils.limitPeriodCounterCheck(key,10,60)) return "发表评论频繁，请稍后再试";
+        TopicComment topicComment = new TopicComment();
+        BeanUtils.copyProperties(vo,topicComment);
+        topicComment.setUid(uid);
+        topicComment.setTime(new Date());
+        topicCommentMapper.insert(topicComment);
+        return null;
+    }
+
     @Override
     public String updateTopic(int uid, TopicUpdateVO vo) {
-        if(!textLimitCheck(vo.getContent())) return "文章内容太多，发文失败";
+        if(!textLimitCheck(vo.getContent(),20000)) return "文章内容太多，发文失败";
         if(!types.contains(vo.getType())) return "文章类型非法";
         baseMapper.update(null,Wrappers.<Topic>update()
                 .eq("uid",uid)
@@ -123,7 +141,7 @@ public class TopicServiceImp extends ServiceImpl<TopicMapper, Topic> implements 
     }
     @Override
     public String createTopic(int uid, TopicCreateVO vo) {
-        if(!textLimitCheck(vo.getContent())) return "文章内容太多，发文失败";
+        if(!textLimitCheck(vo.getContent(),20000)) return "文章内容太多，发文失败";
         if(!types.contains(vo.getType())) return "文章类型非法";
         String key = Const.FORUM_TOPIC_CREATE_COUNTER + uid;
         if(!flowUtils.limitPeriodCounterCheck(key,3,3600)) return "发文频繁，请稍后再试";
@@ -226,12 +244,12 @@ public class TopicServiceImp extends ServiceImpl<TopicMapper, Topic> implements 
         return vo;
 
     }
-    private boolean textLimitCheck(JSONObject object){
+    private boolean textLimitCheck(JSONObject object,int max){
         if(object == null) return false;
         long length = 0;
         for (Object ops : object.getJSONArray("ops")) {
             length += JSONObject.from(ops).getString("insert").length();
-            if(length >2000) return false;
+            if(length >max) return false;
         }
         return true;
 

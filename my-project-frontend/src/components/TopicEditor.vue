@@ -10,6 +10,7 @@ import {accessHeader, post} from "@/net/index.js";
 import {ElMessage} from "element-plus";
 import {userStore} from "@/store/index.js";
 import {get} from "@/net/index.js";
+
 import ColorDot from "@/components/ColorDot.vue";
 const store = userStore()
 const prop = defineProps({
@@ -31,14 +32,17 @@ const prop = defineProps({
     type:String
   },
   submit :{
-    default:(editor,success)=>post("/api/forum/creat-topic",{
-      type: editor.type,
-      title: editor.title,
-      content: editor.text
-    },()=>{
-      ElMessage.success("帖子发表成功！")
-      success()
-    })
+    default:(editor,success)=> {
+      post("/api/forum/creat-topic", {
+        type: editor.type,
+        title: editor.title,
+        content: editor.text
+      }, () => {
+        ElMessage.success("帖子发表成功！")
+        success()
+      })
+    },
+    type:Function
   }
 })
 const refEditor = ref()
@@ -208,18 +212,8 @@ Quill.register("modules/ImageExtend",ImageExtend)
   width: 800px;
   margin: auto;
   border-radius: 8px 8px 0 0;
-
 }
 :deep(.el-drawer__header){
   margin: 0;
-}
-:deep(.ql-toolbar){
-  border-radius: 5px 5px 0 0;
-}
-:deep(.ql-container){
-  border-radius: 0 0 5px 5px ;
-}
-:deep(.ql-editor){
-  font-size: 14px;
 }
 </style>

@@ -3,7 +3,7 @@ import {useRoute, useRouter} from "vue-router";
 import {get, post} from "@/net/index.js";
 import axios from "axios";
 import {reactive,computed,ref} from "vue";
-import {Female,Male,ArrowLeft,CircleCheck,Star,EditPen} from "@element-plus/icons-vue"
+import {Plus,Female,Male,ArrowLeft,CircleCheck,Star,EditPen} from "@element-plus/icons-vue"
 import {QuillDeltaToHtmlConverter} from 'quill-delta-to-html'
 import Card from "@/components/Card.vue";
 import TopicTag from "@/components/TopicTag.vue";
@@ -11,6 +11,8 @@ import InteractButton from "@/components/InteractButton.vue";
 import {ElMessage} from "element-plus";
 import {userStore} from "@/store/index.js";
 import TopicEditor from "@/components/TopicEditor.vue";
+import TopicCommentEditor from "@/components/TopicCommentEditor.vue";
+
 const store = userStore()
 const route = useRoute()
 const router = useRouter()
@@ -19,6 +21,11 @@ const topic = reactive({
   like:false,
   collect:false,
   comments:[]
+})
+const comment = reactive({
+  show:false,
+  text:'',
+  quote:-1
 })
 const tid = route.params.tid
 const content = computed(()=>{
@@ -119,10 +126,31 @@ function updateTopic(editor){
     :default-text="topic.data.content"
     default-button="更新帖子内容"
     :submit="updateTopic"/>
-  </div>
+    <div class="add-comment" @click="comment.show=true">
+      <el-icon><Plus/></el-icon>
+    </div>
+    <topic-comment-editor :show="comment.show" @close="comment.show=false" :tid=tid :quote=comment.quote />
+    </div>
 </template>
 
 <style scoped>
+.add-comment{
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 45px;
+  color: var(--el-color-primary);
+  background: var(--el-bg-color-overlay);
+  box-shadow: var(--el-box-shadow-light);
+  &:hover{
+    background: var(--el-border-color-extra-light);
+    cursor: pointer;
+  }
+}
 
 .topic-page{
   display: flex;

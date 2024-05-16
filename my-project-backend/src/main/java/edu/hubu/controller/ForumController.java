@@ -3,6 +3,7 @@ package edu.hubu.controller;
 import edu.hubu.entity.RestBean;
 import edu.hubu.entity.dto.Interact;
 import edu.hubu.entity.dto.TopicType;
+import edu.hubu.entity.vo.request.AddCommentVO;
 import edu.hubu.entity.vo.request.TopicCreateVO;
 import edu.hubu.entity.vo.request.TopicUpdateVO;
 import edu.hubu.entity.vo.response.*;
@@ -76,5 +77,9 @@ public class ForumController {
     public RestBean<Void> updateTopic(@Valid @RequestBody TopicUpdateVO vo,
                                       @RequestAttribute(Const.ATTR_USER_ID) int id){
         return controllerUtils.messageHandle(()->topicService.updateTopic(id,vo));
+    }
+    @PostMapping("/add-comment")
+    public RestBean<Void> addComment(@Valid @RequestBody AddCommentVO vo, @RequestAttribute(Const.ATTR_USER_ID) int id){
+        return controllerUtils.messageHandle(()->topicService.createComment(vo,id));
     }
 }
