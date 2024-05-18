@@ -5,11 +5,11 @@ import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.fasterxml.jackson.databind.util.BeanUtil;
 import edu.hubu.entity.dto.*;
 import edu.hubu.entity.vo.request.AddCommentVO;
 import edu.hubu.entity.vo.request.TopicCreateVO;
 import edu.hubu.entity.vo.request.TopicUpdateVO;
+import edu.hubu.entity.vo.response.CommentVO;
 import edu.hubu.entity.vo.response.TopicDetailVO;
 import edu.hubu.entity.vo.response.TopicPreviewVO;
 import edu.hubu.entity.vo.response.TopicTopVO;
@@ -28,6 +28,7 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Service
@@ -113,8 +114,39 @@ public class TopicServiceImp extends ServiceImpl<TopicMapper, Topic> implements 
     }
 
     @Override
+    public void deleteComment(int id, int uid) {
+        topicCommentMapper.delete(Wrappers.<TopicComment>query().eq("id",id).eq("uid",uid));
+    }
+
+    @Override
+    public List<CommentVO> comments(int tid, int pageNum) {
+        Page<TopicComment> page = Page.of(pageNum,10);
+        topicCommentMapper.selectPage(page,Wrappers.<TopicComment>query().eq("tid",tid).orderByAsc("time"));
+        return page.getRecords().stream().map(dto ->{
+            CommentVO commentVO = new CommentVO();
+            BeanUtils.copyProperties(dto,commentVO);
+            if(dto.getQuote() > 0){
+                TopicComment topicComment = topicCommentMapper.selectOne(Wrappers.<TopicComment>query().eq("id", dto.getQuote()));
+                if (topicComment != null) {
+                    JSONObject object = JSONObject.parseObject(topicComment.getContent());
+                    StringBuilder stringBuilder = new StringBuilder();
+                    this.shortContent(object.getJSONArray("ops"),stringBuilder,null);
+                    commentVO.setQuote(stringBuilder.toString());
+                }else {
+                    commentVO.setQuote("此评论已被删除");
+                }
+
+            }
+            CommentVO.User user = new CommentVO.User();
+            this.fillUserDetailsByPrivacy(user,dto.getUid());
+            commentVO.setUser(user);
+            return commentVO;
+        }).toList();
+    }
+
+    @Override
     public String createComment(AddCommentVO vo, int uid) {
-        if(!textLimitCheck(JSONObject.parseObject(vo.getContent()),2000))
+        if(textLimitCheck(JSONObject.parseObject(vo.getContent()), 2000))
             return "文章评论内容太多，发文失败";
         String key = Const.FORUM_TOPIC_CREATE_COMMENT + uid;
         if(!flowUtils.limitPeriodCounterCheck(key,10,60)) return "发表评论频繁，请稍后再试";
@@ -128,7 +160,7 @@ public class TopicServiceImp extends ServiceImpl<TopicMapper, Topic> implements 
 
     @Override
     public String updateTopic(int uid, TopicUpdateVO vo) {
-        if(!textLimitCheck(vo.getContent(),20000)) return "文章内容太多，发文失败";
+        if(textLimitCheck(vo.getContent(), 20000)) return "文章内容太多，发文失败";
         if(!types.contains(vo.getType())) return "文章类型非法";
         baseMapper.update(null,Wrappers.<Topic>update()
                 .eq("uid",uid)
@@ -141,7 +173,7 @@ public class TopicServiceImp extends ServiceImpl<TopicMapper, Topic> implements 
     }
     @Override
     public String createTopic(int uid, TopicCreateVO vo) {
-        if(!textLimitCheck(vo.getContent(),20000)) return "文章内容太多，发文失败";
+        if(textLimitCheck(vo.getContent(), 20000)) return "文章内容太多，发文失败";
         if(!types.contains(vo.getType())) return "文章类型非法";
         String key = Const.FORUM_TOPIC_CREATE_COUNTER + uid;
         if(!flowUtils.limitPeriodCounterCheck(key,3,3600)) return "发文频繁，请稍后再试";
@@ -201,6 +233,7 @@ public class TopicServiceImp extends ServiceImpl<TopicMapper, Topic> implements 
         BeanUtils.copyProperties(topic,vo);
         TopicDetailVO.User user = new TopicDetailVO.User();
         vo.setUser(this.fillUserDetailsByPrivacy(user,topic.getUid()));
+        vo.setComments(topicCommentMapper.selectCount(Wrappers.<TopicComment>query().eq("tid",tid)));
         return vo;
     }
     private boolean hasInteract(int tid,int uid,String type){
@@ -228,6 +261,13 @@ public class TopicServiceImp extends ServiceImpl<TopicMapper, Topic> implements 
         List<String> images = new ArrayList<>();
         StringBuilder previewText = new StringBuilder();
         JSONArray ops = JSONObject.parseObject(topic.getContent()).getJSONArray("ops");
+        shortContent(ops,previewText,object -> images.add(object.toString()));
+        vo.setText(previewText.length()>300 ? previewText.substring(0,300) : previewText.substring(0,previewText.length()));
+        vo.setImage(images);
+        return vo;
+
+    }
+    private void shortContent(JSONArray ops, StringBuilder previewText, Consumer<Object> imageHandler){
         for (Object op : ops) {
             Object insert = JSONObject.from(op).get("insert");
             if(insert instanceof String text){
@@ -236,22 +276,18 @@ public class TopicServiceImp extends ServiceImpl<TopicMapper, Topic> implements 
             }else if(insert instanceof Map<?,?> map){
                 Optional
                         .ofNullable(map.get("image"))
-                        .ifPresent(object -> images.add(object.toString()));
+                        .ifPresent(imageHandler);
             }
         }
-        vo.setText(previewText.length()>300 ? previewText.substring(0,300) : previewText.substring(0,previewText.length()));
-        vo.setImage(images);
-        return vo;
-
     }
     private boolean textLimitCheck(JSONObject object,int max){
-        if(object == null) return false;
+        if(object == null) return true;
         long length = 0;
         for (Object ops : object.getJSONArray("ops")) {
             length += JSONObject.from(ops).getString("insert").length();
-            if(length >max) return false;
+            if(length >max) return true;
         }
-        return true;
+        return false;
 
     }
 }

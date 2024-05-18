@@ -82,4 +82,14 @@ public class ForumController {
     public RestBean<Void> addComment(@Valid @RequestBody AddCommentVO vo, @RequestAttribute(Const.ATTR_USER_ID) int id){
         return controllerUtils.messageHandle(()->topicService.createComment(vo,id));
     }
+    @GetMapping("/comments")
+    public RestBean<List<CommentVO>> comments(@RequestParam @Min(0) int tid,@RequestParam @Min(0) int page){
+        return RestBean.success(topicService.comments(tid,page+1));
+    }
+    @GetMapping("/delete-comments")
+    public RestBean<Void> deleteComment(@RequestParam @Min(0) int id,@RequestAttribute(Const.ATTR_USER_ID) int uid){
+        topicService.deleteComment(id,uid);
+        return RestBean.success();
+    }
+
 }

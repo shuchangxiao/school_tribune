@@ -1,9 +1,21 @@
 <script setup>
+import '@vueup/vue-quill/dist/vue-quill.snow.css'
 import {useRoute, useRouter} from "vue-router";
-import {get, post} from "@/net/index.js";
+import {accessHeader, get, post} from "@/net/index.js";
 import axios from "axios";
 import {reactive,computed,ref} from "vue";
-import {Plus,Female,Male,ArrowLeft,CircleCheck,Star,EditPen} from "@element-plus/icons-vue"
+import {
+  Plus,
+  Female,
+  Male,
+  ArrowLeft,
+  CircleCheck,
+  Star,
+  EditPen,
+  ChatDotSquare,
+  Delete,
+  ChatSquare
+} from "@element-plus/icons-vue"
 import {QuillDeltaToHtmlConverter} from 'quill-delta-to-html'
 import Card from "@/components/Card.vue";
 import TopicTag from "@/components/TopicTag.vue";
@@ -12,6 +24,10 @@ import {ElMessage} from "element-plus";
 import {userStore} from "@/store/index.js";
 import TopicEditor from "@/components/TopicEditor.vue";
 import TopicCommentEditor from "@/components/TopicCommentEditor.vue";
+import LightCard from "@/components/LightCard.vue";
+import {QuillEditor} from "@vueup/vue-quill";
+import {QuillWatch} from "quill-image-super-solution-module";
+import CommentCard from "@/components/CommentCard.vue";
 
 const store = userStore()
 const route = useRoute()
@@ -20,24 +36,29 @@ const topic = reactive({
   data:null,
   like:false,
   collect:false,
-  comments:[]
+  comments:null,
+  page:0
 })
+let checkComment = ref(false)
+const addCheckComment = ref(false)
 const comment = reactive({
   show:false,
-  text:'',
-  quote:-1
+  content:'',
+  quote:-1,
+  uploading:false
 })
 const tid = route.params.tid
-const content = computed(()=>{
-  const ops = JSON.parse(topic.data.content).ops
+function convertToHtml(content){
+  const ops = JSON.parse(content).ops
   const converter = new QuillDeltaToHtmlConverter(ops,{inlineStyles:true})
   return converter.convert()
-})
+}
 const edit = ref(false)
 const init = () => get(`api/forum/topic?tid=${tid}`,data=>{
   topic.data=data
   topic.like = data.interact.like
   topic.collect = data.interact.collect
+  loadComment(0)
 })
 init()
 function interact(type,message){
@@ -56,8 +77,68 @@ function updateTopic(editor){
   },()=> {
     ElMessage.success("帖子内容跟新成功")
     edit.value = false
-    init()
   })
+}
+function loadComment(page){
+  topic.comments = null;
+  topic.page = page
+  get(`api/forum/comments?tid=${tid}&page=${page}`,data=>{
+    topic.comments = data
+  })
+}
+function submit(){
+  post("/api/forum/add-comment",{
+    tid:tid,
+    quote: comment.quote,
+    content: JSON.stringify(comment.content)
+  },()=>{
+    ElMessage.success("发表评论成功")
+    topic.page = Math.floor(++topic.data.comments/10)
+    loadComment(topic.page)
+  })
+}
+
+const editorOptions = {
+  modules:{
+    toolbar:{
+      container:["link", "image",],
+      handlers:{
+        'image':function (){
+          QuillWatch.emit(this.quill.id)
+        }
+      }
+    },
+    imageResize:{
+      modules:['Resize',"DisplaySize"]
+    },
+    ImageExtend: {
+      action:  axios.defaults.baseURL + '/api/image/cache',
+      name: 'file',
+      size: 5,
+      loading: true,
+      accept: 'image/png, image/jpeg',
+      response: (resp) => {
+        if(resp.data) {
+          return axios.defaults.baseURL + '/images' + resp.data
+        } else {
+          return null
+        }
+      },
+      methods: 'POST',
+      headers: xhr => {
+        xhr.setRequestHeader('Authorization', accessHeader().Authorization);
+      },
+      start: () => comment.uploading = true,
+      success: () => {
+        ElMessage.success('图片上传成功!')
+        comment.uploading = false
+      },
+      error: () => {
+        ElMessage.warning('图片上传失败，请联系管理员!')
+        comment.uploading = false
+      }
+    }
+  }
 }
 </script>
 
@@ -99,12 +180,16 @@ function updateTopic(editor){
           </div>
       </div>
       <div class="topic-main-right">
-        <div class="topic-content" v-html="content"></div>
+        <div class="topic-content" v-html="convertToHtml(topic.data.content)"></div>
         <el-divider></el-divider>
         <div style="font-size: 13px;color: grey;text-align: center">
           <div>发帖日期：{{new Date(topic.data.time).toLocaleString()}}</div>
         </div>
         <div style="text-align: right;margin-top: 30px">
+          <interact-button name="评论" color="grey"
+                           @click="checkComment = checkComment !== true;" style="margin-right: 30px">
+            <el-icon style="transform: translateY(2px)"><ChatDotSquare /></el-icon>
+          </interact-button>
           <interact-button name="编辑" color="dodgerblue"
                            @click="edit=true" style="margin-right: 30px" v-if="store.user.id===topic.data.user.id">
             <el-icon style="transform: translateY(2px)"><EditPen/></el-icon>
@@ -120,20 +205,42 @@ function updateTopic(editor){
         </div>
       </div>
     </div>
+    <div v-if="checkComment">
+      <LightCard style="width: 800px;margin: 10px auto;text-align: left">
+        <div style="display: flex">
+          <div style="display: flex;justify-content: center;flex: 1;border-right: solid 1px #ead4c4;margin-right: 10px;text-align: center">
+            <el-avatar style="margin-top: 40px" :size="80" :src="store.avatarUrl"></el-avatar>
+          </div>
+          <div style="width: 650px">
+            <div style="height:120px;overflow: hidden">
+              <quill-editor  style="height: calc(100% - 25px)" v-model:content="comment.content"
+                             placeholder="请发表有效的评论，不要使用脏话骂人"
+                             :options="editorOptions"></quill-editor>
+            </div>
+            <div style="margin-top: 10px;text-align: right">
+              <el-button plain type="success" @click="submit">发表评论</el-button>
+            </div>
+          </div>
+        </div>
+      </LightCard>
+      <CommentCard style="margin: auto;" v-for="item in topic.comments"
+                   :data="item" :tid = "tid" :editorOptions="editorOptions" @delete="loadComment(topic.page)">
+      </CommentCard>
+      <div style="width: fit-content;margin: 20px auto">
+        <el-pagination hide-on-single-page background layout="pre,pager,next" v-model="topic.page" @current-change="num => loadComment(num-1)" :total="topic.data.comments" page-size="10"></el-pagination>
+      </div>
+    </div>
     <topic-editor :show="edit" @close="edit=false"
     :default-type="topic.data.type"
     :default-title="topic.data.title"
     :default-text="topic.data.content"
     default-button="更新帖子内容"
     :submit="updateTopic"/>
-    <div class="add-comment" @click="comment.show=true">
-      <el-icon><Plus/></el-icon>
-    </div>
-    <topic-comment-editor :show="comment.show" @close="comment.show=false" :tid=tid :quote=comment.quote />
-    </div>
+  </div>
 </template>
 
 <style scoped>
+
 .add-comment{
   position: fixed;
   bottom: 20px;
@@ -186,5 +293,8 @@ function updateTopic(editor){
       flex:1
     }
   }
+}
+:deep(img){
+  max-width: 700px;
 }
 </style>
