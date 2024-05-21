@@ -29,6 +29,7 @@ import {QuillEditor} from "@vueup/vue-quill";
 import {QuillWatch} from "quill-image-super-solution-module";
 import CommentCard from "@/components/CommentCard.vue";
 
+
 const store = userStore()
 const route = useRoute()
 const router = useRouter()
@@ -37,10 +38,10 @@ const topic = reactive({
   like:false,
   collect:false,
   comments:null,
-  page:0
+  page:1
 })
 let checkComment = ref(false)
-const addCheckComment = ref(false)
+
 const comment = reactive({
   show:false,
   content:'',
@@ -48,6 +49,15 @@ const comment = reactive({
   uploading:false
 })
 const tid = route.params.tid
+const contentLength= computed(()=>deltaToText(comment.content).length)
+function deltaToText(delta){
+  if(!delta.ops) return ""
+  let str = ""
+  for (let op of delta.ops) {
+    str += op.insert
+  }
+  return str.replace(/\s/g,"")
+}
 function convertToHtml(content){
   const ops = JSON.parse(content).ops
   const converter = new QuillDeltaToHtmlConverter(ops,{inlineStyles:true})
@@ -58,7 +68,7 @@ const init = () => get(`api/forum/topic?tid=${tid}`,data=>{
   topic.data=data
   topic.like = data.interact.like
   topic.collect = data.interact.collect
-  loadComment(0)
+  loadComment(1)
 })
 init()
 function interact(type,message){
@@ -82,7 +92,7 @@ function updateTopic(editor){
 function loadComment(page){
   topic.comments = null;
   topic.page = page
-  get(`api/forum/comments?tid=${tid}&page=${page}`,data=>{
+  get(`api/forum/comments?tid=${tid}&page=${page-1}`,data=>{
     topic.comments = data
   })
 }
@@ -93,11 +103,18 @@ function submit(){
     content: JSON.stringify(comment.content)
   },()=>{
     ElMessage.success("发表评论成功")
-    topic.page = Math.floor(++topic.data.comments/10)
+    topic.page = Math.floor(++topic.data.comments/10)+1
+    comment.content = null
     loadComment(topic.page)
   })
 }
+const avatarURL = computed(()=>{
+  if(topic.data.user.avatar !== null){
+    return axios.defaults.baseURL + '/images' + topic.data.user.avatar
+  }
+  return "https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png"
 
+})
 const editorOptions = {
   modules:{
     toolbar:{
@@ -155,7 +172,7 @@ const editorOptions = {
     </div>
     <div class="topic-main">
       <div class="topic-main-left">
-          <el-avatar :src="axios.defaults.baseURL + '/images'+ topic.data.user.avatar" :size="60"></el-avatar>
+          <el-avatar :src="avatarURL" :size="60"></el-avatar>
           <div>
             <div style="font-size: 18px;font-weight: bold">
               {{topic.data.user.username}}
@@ -217,17 +234,20 @@ const editorOptions = {
                              placeholder="请发表有效的评论，不要使用脏话骂人"
                              :options="editorOptions"></quill-editor>
             </div>
-            <div style="margin-top: 10px;text-align: right">
+            <div style="margin-top: 10px;text-align: right;display: flex">
+              <div style="color: green;flex: 1;text-align: left">
+                当前字数{{ contentLength }}字(最大支持2000字)
+              </div>
               <el-button plain type="success" @click="submit">发表评论</el-button>
             </div>
           </div>
         </div>
       </LightCard>
       <CommentCard style="margin: auto;" v-for="item in topic.comments"
-                   :data="item" :tid = "tid" :editorOptions="editorOptions" @delete="loadComment(topic.page)">
+                   :data="item" :tid = "tid" :editorOptions="editorOptions" @delete="loadComment(topic.page);topic.comments--" @add-commit="topic.page = Math.floor(++topic.data.comments/10)+1;loadComment(topic.page)">
       </CommentCard>
       <div style="width: fit-content;margin: 20px auto">
-        <el-pagination hide-on-single-page background layout="pre,pager,next" v-model="topic.page" @current-change="num => loadComment(num-1)" :total="topic.data.comments" page-size="10"></el-pagination>
+        <el-pagination hide-on-single-page background layout="pre,pager,next" v-model:current-page="topic.page" @current-change="num => loadComment(num)" v-model:total="topic.data.comments" page-size="10"></el-pagination>
       </div>
     </div>
     <topic-editor :show="edit" @close="edit=false"

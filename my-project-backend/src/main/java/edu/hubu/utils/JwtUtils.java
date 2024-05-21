@@ -46,7 +46,7 @@ public class JwtUtils {
             return false;
         }
         Date now = new Date();
-        long expire = Math.max(time.getTime() - now.getTime(),0);
+        long expire = Math.max(time.getTime() - now.getTime(),0L);
         stringRedisTemplate.opsForValue().set(Const.JWT_BLACK_LIST+uuid,"",expire, TimeUnit.MILLISECONDS);
         return true;
     }

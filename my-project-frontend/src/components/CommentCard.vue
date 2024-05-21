@@ -4,7 +4,7 @@ import {QuillDeltaToHtmlConverter} from 'quill-delta-to-html'
 import {ChatSquare, Delete} from "@element-plus/icons-vue";
 import {userStore} from "@/store/index.js";
 import {QuillEditor} from "@vueup/vue-quill";
-import {ref} from "vue"
+import {ref,computed} from "vue"
 import {post,get} from "@/net/index.js";
 import {ElMessage} from "element-plus";
 const store = userStore()
@@ -13,7 +13,23 @@ const prop = defineProps({
   tid:Number,
   data:JSON
 })
-const emit = defineEmits(["delete"])
+const avatarURL = computed(()=>{
+  if(prop.data.user.avatar !== null){
+    return axios.defaults.baseURL + '/images' + prop.data.user.avatar
+  }
+  return "https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png"
+
+})
+const contentLength= computed(()=>deltaToText(comment.content).length)
+function deltaToText(delta){
+  if(!delta.ops) return ""
+  let str = ""
+  for (let op of delta.ops) {
+    str += op.insert
+  }
+  return str.replace(/\s/g,"")
+}
+const emit = defineEmits(["delete","add-commit"])
 const comment = {
   content:'',
 }
@@ -36,6 +52,8 @@ function submit(){
     content: JSON.stringify(comment.content)
   },()=>{
     ElMessage.success("发表评论成功")
+    addCheckComment.value = false
+    emit("add-commit")
   })
 }
 </script>
@@ -43,7 +61,7 @@ function submit(){
 <template>
   <div class="comment-class">
     <div>
-      <el-avatar :src="axios.defaults.baseURL + '/images' + data.user.avatar" :size="60"></el-avatar>
+      <el-avatar :src="avatarURL" :size="60"></el-avatar>
     </div>
     <div style="flex: 1;margin-left: 20px">
       <div style="display: flex;flex-direction: row">
@@ -68,9 +86,12 @@ function submit(){
                          placeholder="请发表有效的评论，不要使用脏话骂人"
                          :options="editorOptions"></quill-editor>
         </div>
-        <div style="margin-top: 10px;text-align: right">
-          <el-button plain type="success" @click="submit">发表评论</el-button>
-        </div>
+          <div style="margin-top: 10px;text-align: right;display: flex">
+            <div style="color: green;flex: 1;text-align: left">
+              当前字数{{ contentLength }}字(最大支持2000字)
+            </div>
+            <el-button plain type="success" @click="submit">发表评论</el-button>
+          </div>
       </div>
       </div>
       <el-divider></el-divider>

@@ -60,17 +60,21 @@ public class SecurityConfiguration {
                 .build();
 
     }
-    public void onDeniedHandle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) throws IOException, ServletException {
+    public void onDeniedHandle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) throws IOException {
         response.setContentType("application/json;charset=utf-8");
         response.getWriter().write(RestBean.forbidden("没有权限").asJsonString());
 
     }
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
-                                        Authentication authentication) throws IOException, ServletException{
+                                        Authentication authentication) throws IOException {
         response.setContentType("application/json;charset=utf-8");
-//        User user = (User) authentication.getPrincipal();
-//        String token = jwtUtils.creatJwt(user,1,"小明");
+        /*
+        * 旧写法
+        * User = (User) authentication.getPrincipal();
+        * String token = jwtUtils.creatJwt(user,1,"小明");
+        * */
+
         // 修改后写法
         MyUserDetail user = (MyUserDetail) authentication.getPrincipal();
         String token = jwtUtils.creatJwt(user);
@@ -83,11 +87,11 @@ public class SecurityConfiguration {
     }
     public void onAuthenticationFailure(HttpServletRequest request,
                                         HttpServletResponse response,
-                                        AuthenticationException exception) throws IOException, ServletException {
+                                        AuthenticationException exception) throws IOException {
         response.setContentType("application/json;charset=utf-8");
         response.getWriter().write(RestBean.failure(401,"用户名或密码错误").asJsonString());
     }
-    public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+    public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
         response.setContentType("application/json;charset=utf-8");
         PrintWriter writer = response.getWriter();
         String authorization = request.getHeader("Authorization");

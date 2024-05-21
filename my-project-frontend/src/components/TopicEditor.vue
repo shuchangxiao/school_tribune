@@ -196,7 +196,7 @@ Quill.register("modules/ImageExtend",ImageExtend)
       </div>
       <div style="margin-top:10px;display: flex;justify-content:space-between;gap: 10px">
         <div style="color: green">
-          当前字数{{ contentLength }}字(最大支持500字)
+          当前字数{{ contentLength }}字(最大支持20000字)
         </div>
         <div>
           <el-button @click="submitTopic" type="success" :icon="Check" plain>{{ prop.defaultButton }}</el-button>

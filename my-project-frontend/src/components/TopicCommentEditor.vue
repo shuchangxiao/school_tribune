@@ -19,6 +19,7 @@ function submit(){
     content: JSON.stringify(content.value)
   },()=>{
     ElMessage.success("发表评论成功")
+    content.value=""
     emit('close')
   })
 }

@@ -2,9 +2,13 @@ package edu.hubu.service.Imp;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import edu.hubu.entity.dto.AccountDetail;
 import edu.hubu.entity.dto.AccountDto;
+import edu.hubu.entity.dto.AccountPrivacy;
 import edu.hubu.entity.vo.request.*;
+import edu.hubu.mapper.AccountDetailMapper;
 import edu.hubu.mapper.AccountMapper;
+import edu.hubu.mapper.AccountPrivacyMapper;
 import edu.hubu.service.AccountService;
 import edu.hubu.utils.Const;
 import edu.hubu.utils.FlowUtils;
@@ -34,6 +38,10 @@ public class AccountServiceImp extends ServiceImpl<AccountMapper, AccountDto> im
     StringRedisTemplate stringRedisTemplate;
     @Resource
     FlowUtils flowUtils;
+    @Resource
+    AccountDetailMapper accountDetailMapper;
+    @Resource
+    AccountPrivacyMapper accountPrivacyMapper;
     @Resource
     BCryptPasswordEncoder encoder;
 
@@ -70,6 +78,10 @@ public class AccountServiceImp extends ServiceImpl<AccountMapper, AccountDto> im
         AccountDto accountDto = new AccountDto(null,vo.getUsername(),password, vo.getEmail(), "user",new Date(),null);
         if(this.save(accountDto)) {
             stringRedisTemplate.delete(Const.VERIFY_EMAIL_DATA+email);
+            accountPrivacyMapper.insert(new AccountPrivacy(accountDto.getId()));
+            AccountDetail accountDetail = new AccountDetail();
+            accountDetail.setId(accountDto.getId());
+            accountDetailMapper.insert(accountDetail);
             return null;
         }
         else return "内部出现错误，请联系管理员";
@@ -114,6 +126,13 @@ public class AccountServiceImp extends ServiceImpl<AccountMapper, AccountDto> im
         }
     }
 
+    /**
+     * 根据用户名加载用户信息
+     *
+     * @param username 用户名
+     * @return UserDetails 用户信息
+     * @throws UsernameNotFoundException 用户名不存在时抛出异常
+     */
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         AccountDto accountDto = this.findAccountByNameOrEmail(username);

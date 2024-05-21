@@ -29,6 +29,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -146,6 +147,13 @@ public class TopicServiceImp extends ServiceImpl<TopicMapper, Topic> implements 
 
     @Override
     public String createComment(AddCommentVO vo, int uid) {
+        JSONObject jsonObject = JSONObject.parseObject(vo.getContent());
+        String x = "{\"insert\":\"\\n\"}";
+        if (jsonObject==null || jsonObject.getJSONArray("ops") == null) return "评论内容不成立";
+        String string = JSONObject.parseObject(jsonObject.getJSONArray("ops").get(0).toString()).get("insert").toString();
+        boolean hasChar = Pattern.compile("[a-zA-Z]").matcher(string).find();
+        boolean hasChinese = Pattern.compile("[\\u4e00-\\u9fa5]").matcher(string).find();
+        if (!hasChar && !hasChinese) return "请填写评论内容";
         if(textLimitCheck(JSONObject.parseObject(vo.getContent()), 2000))
             return "文章评论内容太多，发文失败";
         String key = Const.FORUM_TOPIC_CREATE_COMMENT + uid;
@@ -173,6 +181,7 @@ public class TopicServiceImp extends ServiceImpl<TopicMapper, Topic> implements 
     }
     @Override
     public String createTopic(int uid, TopicCreateVO vo) {
+        if (vo.getContent().getJSONArray("ops") == null) return "文章内容不成立";
         if(textLimitCheck(vo.getContent(), 20000)) return "文章内容太多，发文失败";
         if(!types.contains(vo.getType())) return "文章类型非法";
         String key = Const.FORUM_TOPIC_CREATE_COUNTER + uid;
@@ -288,6 +297,5 @@ public class TopicServiceImp extends ServiceImpl<TopicMapper, Topic> implements 
             if(length >max) return true;
         }
         return false;
-
     }
 }

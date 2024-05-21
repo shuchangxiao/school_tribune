@@ -30,6 +30,13 @@ public class WeatherServiceImp implements WeatherService {
     public WeatherVO fetchWeather(double longitude, double latitude) {
         return fetchFromCache(longitude,latitude);
     }
+    /**
+     * 从缓存中获取天气信息
+     *
+     * @param longitude 经度
+     * @param latitude 纬度
+     * @return WeatherVO 天气信息对象，若获取失败则返回null
+     */
     private WeatherVO fetchFromCache(double longitude, double latitude){
         byte[] data = restTemplate.getForObject(
                 "https://geoapi.qweather.com/v2/city/lookup?location=" + longitude + "," + latitude + "&key=" + key, byte[].class);
@@ -47,6 +54,13 @@ public class WeatherServiceImp implements WeatherService {
         stringRedisTemplate.opsForValue().set(key,JSONObject.from(vo).toString(),1, TimeUnit.HOURS);
         return vo;
     }
+    /**
+     * 从API获取天气信息
+     *
+     * @param id 地点ID
+     * @param location 地点JSON对象
+     * @return WeatherVO 天气信息对象，若获取失败则返回null
+     */
     private WeatherVO fetchFromAPI(int id,JSONObject location){
         WeatherVO vo = new WeatherVO();
         vo.setLocation(location);
@@ -60,6 +74,12 @@ public class WeatherServiceImp implements WeatherService {
         vo.setHourly(new JSONArray(hourly.getJSONArray("hourly").stream().limit(5).toList()));
         return vo;
     }
+    /**
+     * 将经过gzip压缩的字符串反压缩并解析为JSONObject对象
+     *
+     * @param data 压缩后的字节数组
+     * @return 返回解析后的JSONObject对象，如果解析失败则返回null
+     */
     private JSONObject decompressStringToJson(byte[] data){
         ByteArrayOutputStream steam = new ByteArrayOutputStream();
         try {
