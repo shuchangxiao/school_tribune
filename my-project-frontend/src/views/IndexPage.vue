@@ -5,11 +5,25 @@ import router from "@/router";
 import {userStore} from "@/store/index.js";
 import {ref,reactive} from "vue";
 import {get} from "@/net/index.js";
-import {Back,Message,Operation,Search,Location,ChatDotSquare,Bell,Notification,School,Umbrella} from '@element-plus/icons-vue';
+import {
+  Back,
+  Message,
+  Operation,
+  Search,
+  Location,
+  ChatDotSquare,
+  Bell,
+  Notification,
+  School,
+  Umbrella,
+  Check
+} from '@element-plus/icons-vue';
+import LightCard from "@/components/LightCard.vue";
+import {ElMessage} from "element-plus";
 
 const loading = ref(true)
 const store = userStore()
-
+const notification = ref([])
 const searchInput = reactive({
   type:'1',
   text:''
@@ -21,6 +35,24 @@ get("/api/user/info",(data)=>{
 function userLogout(){
   logout(()=>router.push("/"))
 }
+const loadNotification = ()=>{
+  get("/api/notification/list",(data)=>{
+    notification.value = data
+  })
+}
+function deleteAllNotification(){
+  get("/api/notification/delete-all",()=>{
+    ElMessage.success("删除所有消息成功")
+    notification.value = []
+  })
+}
+function confirmNotification(id,url){
+  get(`/api/notification/delete?id=${id}`,()=>{
+    loadNotification()
+    window.open(url)
+  })
+}
+loadNotification()
 </script>
 
 <template>
@@ -44,6 +76,36 @@ function userLogout(){
           </el-input>
         </div>
         <div class="user-info">
+          <el-popover placement="bottom" :width="350" trigger="click">
+            <template #reference>
+              <el-badge  is-dot :hidden="!notification.length" style="margin-right: 14px">
+                <div class="notification">
+                  <el-icon><Bell/></el-icon>
+                  <div>通知</div>
+                </div>
+              </el-badge>
+            </template>
+            <el-empty :image-size="80" description="暂时没有未读消息哦" v-if="!notification.length"/>
+            <el-scrollbar :max-height="500" v-else>
+              <light-card v-for="item in notification" class="notification-item" @click="confirmNotification(item.id,item.url)">
+                <div>
+                  <el-tag :type="item.type" size="small">消息</el-tag>
+                  <span style="font-weight: bold">{{item.title}}</span>
+                </div>
+                <el-divider style="margin: 7px 0 3px 0"/>
+                <div style="font-size: 13px">
+                  {{item.content}}
+                </div>
+              </light-card>
+
+            </el-scrollbar>
+            <div style="margin-top: 10px">
+              <el-button size="small" type="info" :icon="Check" @click="deleteAllNotification"
+                         plain style="width: 100%">
+                清除全部未读消息
+              </el-button>
+            </div>
+          </el-popover>
           <div class="profile">
             <div>{{ store.user.username }}</div>
             <div>{{ store.user.email }}</div>
@@ -182,6 +244,24 @@ function userLogout(){
 
 
 <style lang="less" scoped>
+.notification-item{
+  transition: .3s;
+  &:hover{
+    cursor: pointer;
+    opacity: 0.8;
+  }
+}
+.notification{
+  font-size: 22px;
+  line-height: 14px;
+  text-align: center;
+  transition: color 0.3s;
+  &:hover{
+    color: grey;
+    cursor: pointer;
+  }
+
+}
 .main-content{
   height: 100vh;
   width: 100vw;

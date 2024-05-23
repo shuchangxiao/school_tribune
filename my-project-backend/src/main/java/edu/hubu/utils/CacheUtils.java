@@ -20,8 +20,6 @@ import java.util.concurrent.TimeUnit;
 public class CacheUtils {
     @Resource
     StringRedisTemplate stringRedisTemplate;
-    @Resource
-    private RedisConnectionFactory connectionFactory;
     public <T> List<T> takeListFromCache(String key, Class<T> itemType){
         String s = stringRedisTemplate.opsForValue().get(key);
         if(s==null) return null;

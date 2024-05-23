@@ -12,20 +12,15 @@ import java.util.List;
 
 @Mapper
 public interface TopicMapper extends BaseMapper<Topic> {
-//    @Select("""
-//        select * from db_topic left join db_account on uid = db_account.id
-//        order by `time` desc limit ${start} ,10
-//        """)
-//    List<Topic> topicList(int start);
-//    @Select("""
-//        select * from db_topic left join db_account on uid = db_account.id
-//        where type = #{type}
-//        order by `time` desc limit ${start} ,10
-//        """)
-//    List<Topic> topicListByType(int start,int type);
+    /**
+     * 向数据库中的 db_topic_interact_${type} 表中插入交互记录
+     *
+     * @param interacts 交互记录列表
+     * @param type 交互类型
+     */
     @Insert("""
         <script>
-            insert ignore into db_topic_interact_${type} values 
+            insert ignore into db_topic_interact_${type} values
             <foreach collection ="interacts" item ="item" separator =",">
                 (#{item.tid},#{item.uid},#{item.time})
             </foreach>
@@ -35,7 +30,7 @@ public interface TopicMapper extends BaseMapper<Topic> {
 
     @Delete("""
         <script>
-            delete from db_topic_interact_${type} where 
+            delete from db_topic_interact_${type} where
             <foreach collection ="interacts" item ="item" separator =" or ">
                 (tid = #{item.tid} and uid = #{item.uid})
             </foreach>

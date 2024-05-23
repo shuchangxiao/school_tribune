@@ -14,6 +14,7 @@ import edu.hubu.entity.vo.response.TopicDetailVO;
 import edu.hubu.entity.vo.response.TopicPreviewVO;
 import edu.hubu.entity.vo.response.TopicTopVO;
 import edu.hubu.mapper.*;
+import edu.hubu.service.NotificationService;
 import edu.hubu.service.TopicService;
 import edu.hubu.utils.CacheUtils;
 import edu.hubu.utils.Const;
@@ -51,6 +52,8 @@ public class TopicServiceImp extends ServiceImpl<TopicMapper, Topic> implements 
     @Resource
     TopicCommentMapper topicCommentMapper;
     private  Set<Integer> types = null;
+    @Resource
+    NotificationService notificationService;
 
     @Override
     public List<TopicPreviewVO> listTopicCollects(int uid) {
@@ -163,6 +166,29 @@ public class TopicServiceImp extends ServiceImpl<TopicMapper, Topic> implements 
         topicComment.setUid(uid);
         topicComment.setTime(new Date());
         topicCommentMapper.insert(topicComment);
+        Topic topic = baseMapper.selectById(vo.getTid());
+        AccountDto account = accountMapper.selectById(uid);
+        if(vo.getQuote()>0){
+            TopicComment comment = topicCommentMapper.selectById(vo.getQuote());
+            if(!Objects.equals(uid,comment.getUid())){
+                notificationService.addNotification(
+                        comment.getUid(),
+                        "您有新的帖子评论回复",
+                        account.getUsername()+" 回复了你，快去看看把",
+                        "success",
+                        "/index/topic-detail/"+comment.getTid()
+                );
+            }
+        }
+        else if(!Objects.equals(uid,topic.getUid())){
+            notificationService.addNotification(
+                    topic.getUid(),
+                    "您有新的帖子评论回复",
+                    "回复了你发表的主题："+topic.getTitle()+",快去看看把",
+                    "success",
+                    "/index/topic-detail/"+topic.getId()
+            );
+        }
         return null;
     }
 
